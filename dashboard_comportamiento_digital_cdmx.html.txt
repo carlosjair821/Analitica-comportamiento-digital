@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comportamiento Digital CDMX | Dashboard Ejecutivo PRO</title>
+  <!-- Fuente Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pbiBg: '#0D1017',
+            pbiCard: '#131722',
+            pbiBorder: '#2C3240',
+            crimsonPrimary: '#E63946',
+            crimsonBright: '#FF4D5A',
+            crimsonDeep: '#991B1B',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #0D1017;
+      color: #F8FAFC;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    /* Estilo contenedor Power BI PRO: esquinas redondeadas, borde gris semitransparente, sin relleno pesado */
+    .pbi-card {
+      background: rgba(19, 23, 34, 0.55);
+      border: 1.5px solid #2C3240;
+      border-radius: 14px;
+      transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .pbi-card:hover {
+      border-color: #3E4659;
+    }
+    .pbi-card-active {
+      border-color: #E63946 !important;
+      box-shadow: 0 0 0 1px rgba(230, 57, 70, 0.25);
+    }
+    /* Estilo Slicers Dropdown oscuros */
+    .pbi-select {
+      background-color: #131722;
+      border: 1.5px solid #2C3240;
+      border-radius: 10px;
+      color: #F8FAFC;
+      transition: all 0.2s ease;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394A3B8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      background-size: 1rem;
+      padding-right: 2.25rem;
+    }
+    .pbi-select:hover, .pbi-select:focus {
+      border-color: #E63946;
+      outline: none;
+    }
+    /* Sliders personalizados para Simulador RL */
+    input[type="range"].pbi-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #2C3240;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"].pbi-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #FF4D5A;
+      border: 2px solid #0D1017;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(255, 77, 90, 0.5);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].pbi-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+    input[type="range"].pbi-slider::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #FF4D5A;
+      border: 2px solid #0D1017;
+      cursor: pointer;
+    }
+    /* Scrollbar sutil */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0D1017;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2C3240;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-crimsonPrimary selection:text-white">
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 space-y-4">
+
+    <!-- ENCABEZADO EJECUTIVO -->
+    <header class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-1">
+      <div class="flex items-start gap-3.5">
+        <div class="w-1.5 h-12 rounded-full bg-gradient-to-b from-[#FF4D5A] to-[#991B1B] shrink-0 mt-0.5"></div>
+        <div>
+          <h1 class="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight text-white">
+            COMPORTAMIENTO DIGITAL CDMX <span class="text-[#FF4D5A] mx-1">|</span> DASHBOARD EJECUTIVO
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+            Modelado Estadístico, Clustering K-Means y Regresión Lineal (Muestra: <span id="headerTotalBadge" class="text-slate-200 font-semibold">346</span> Universitarios)
+          </p>
+        </div>
+      </div>
+
+      <!-- Botones de Acción Rápida -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button id="btnOpenSimulator" type="button"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-[#E63946] to-[#991B1B] hover:from-[#FF4D5A] hover:to-[#B91C1C] border border-[#FF4D5A]/40 shadow-lg shadow-[#E63946]/15 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Simulador RL
+        </button>
+
+        <button id="btnResetFilters" type="button"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium text-slate-300 hover:text-white bg-[#131722] hover:bg-[#1A202E] border-[1.5px] border-[#2C3240] hover:border-slate-500 transition cursor-pointer">
+          <svg class="w-4 h-4 text-[#FF4D5A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Restablecer Filtros
+          <span id="activeFilterCount" class="hidden ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-[#E63946] text-white">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 1. BARRA SUPERIOR DE FILTROS INTERACTIVOS (SLICERS) -->
+    <section aria-label="Filtros Interactivos" class="pbi-card p-3.5 sm:p-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <!-- Filtro 1: Alcaldía CDMX -->
+        <div>
+          <label for="filterAlcaldia" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Alcaldía CDMX
+          </label>
+          <select id="filterAlcaldia" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todas las Alcaldías (8)</option>
+          </select>
+        </div>
+
+        <!-- Filtro 2: Perfil Conductual -->
+        <div>
+          <label for="filterPerfil" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Perfil Conductual (K-Means)
+          </label>
+          <select id="filterPerfil" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todos los Perfiles</option>
+            <option value="Productivos">Productivos</option>
+            <option value="Consumidores de Ocio">Consumidores de Ocio</option>
+            <option value="Procrastinadores">Procrastinadores</option>
+          </select>
+        </div>
+
+        <!-- Filtro 3: Estado de Riesgo -->
+        <div>
+          <label for="filterRiesgo" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Estado de Riesgo Académico
+          </label>
+          <select id="filterRiesgo" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todos los Estados</option>
+            <option value="1">Con Riesgo (&lt; 7.5)</option>
+            <option value="0">Estable (&gt;= 7.5)</option>
+          </select>
+        </div>
+
+        <!-- Filtro 4: Mes de Registro -->
+        <div>
+          <label for="filterMes" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Mes de Registro
+          </label>
+          <select id="filterMes" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todos los Meses (Ene - Dic)</option>
+            <option value="1">Ene (Enero)</option>
+            <option value="2">Feb (Febrero)</option>
+            <option value="3">Mar (Marzo)</option>
+            <option value="4">Abr (Abril)</option>
+            <option value="5">May (Mayo)</option>
+            <option value="6">Jun (Junio)</option>
+            <option value="7">Jul (Julio)</option>
+            <option value="8">Ago (Agosto)</option>
+            <option value="9">Sep (Septiembre)</option>
+            <option value="10">Oct (Octubre)</option>
+            <option value="11">Nov (Noviembre)</option>
+            <option value="12">Dic (Diciembre)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- AVISO DE FILTRO VACÍO (SOLO SI 0 COINCIDENCIAS) -->
+    <div id="emptyStateBanner" class="hidden pbi-card p-4 border-[#E63946] flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3 text-sm text-slate-200">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#FF4D5A] animate-pulse"></span>
+        <span>No hay estudiantes que coincidan con la combinación actual de filtros.</span>
+      </div>
+      <button type="button" onclick="resetAllFilters()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#E63946] text-white hover:bg-[#FF4D5A] transition cursor-pointer">
+        Limpiar selección
+      </button>
+    </div>
+
+    <!-- 2. FILA DE 5 TARJETAS KPI NUMÉRICAS -->
+    <section aria-label="Indicadores Clave de Desempeño" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- KPI 1 -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Estudiantes</span>
+          <span class="text-[11px] font-medium text-slate-500">Muestra</span>
+        </div>
+        <div id="kpiTotal" class="text-3xl sm:text-4xl font-extrabold text-[#FF4D5A] my-2 tracking-tight">346</div>
+        <div id="kpiTotalSub" class="text-xs text-slate-400">100.0% del total analizado</div>
+      </div>
+
+      <!-- KPI 2 -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Promedio Académico Real</span>
+          <span class="text-[11px] font-medium text-slate-500">0 - 10</span>
+        </div>
+        <div id="kpiPromedioReal" class="text-3xl sm:text-4xl font-extrabold text-[#FF4D5A] my-2 tracking-tight">7.39</div>
+        <div id="kpiPromedioRealSub" class="text-xs text-slate-400">Calificación media observada</div>
+      </div>
+
+      <!-- KPI 3 -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Promedio Predicho (RL)</span>
+          <span class="text-[11px] font-medium text-slate-500">R² = 0.92</span>
+        </div>
+        <div id="kpiPromedioPred" class="text-3xl sm:text-4xl font-extrabold text-[#FF4D5A] my-2 tracking-tight">7.39</div>
+        <div id="kpiPromedioPredSub" class="text-xs text-slate-400">Diferencia media: 0.00 pts</div>
+      </div>
+
+      <!-- KPI 4 -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Uso Redes Sociales</span>
+          <span class="text-[11px] font-medium text-slate-500">Hrs/día</span>
+        </div>
+        <div id="kpiRedes" class="text-3xl sm:text-4xl font-extrabold text-[#FF4D5A] my-2 tracking-tight">3.44</div>
+        <div id="kpiRedesSub" class="text-xs text-slate-400">Correlación Pearson: r = -0.88</div>
+      </div>
+
+      <!-- KPI 5 -->
+      <div class="pbi-card p-4 flex flex-col justify-between sm:col-span-2 lg:col-span-1">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tasa de Riesgo (&lt; 7.5)</span>
+          <span class="text-[11px] font-medium text-slate-500">Alerta</span>
+        </div>
+        <div id="kpiRiesgoPct" class="text-3xl sm:text-4xl font-extrabold text-[#FF4D5A] my-2 tracking-tight">54.9%</div>
+        <div id="kpiRiesgoSub" class="text-xs text-slate-400">190 alumnos en riesgo escolar</div>
+      </div>
+    </section>
+
+    <!-- 3. FILA CENTRAL (40% DONA / 60% LÍNEAS MENSUALES) -->
+    <section class="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-4">
+      <!-- Izquierda (40%): Gráfico de Dona -->
+      <div id="cardDonut" class="pbi-card p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white">Distribución por Perfil Conductual</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Haz clic en un segmento para filtrar todo el tablero</p>
+          </div>
+          <span id="badgeDonutFilter" class="hidden px-2 py-0.5 text-[11px] font-semibold rounded-md bg-[#E63946]/20 text-[#FF4D5A] border border-[#E63946]/40">
+            Filtro activo
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 items-center gap-4 my-auto">
+          <div class="sm:col-span-7 relative w-full h-[230px] flex items-center justify-center">
+            <canvas id="chartDonut"></canvas>
+          </div>
+          <div id="donutCustomLegend" class="sm:col-span-5 space-y-2.5">
+            <!-- Leyenda interactiva generada por JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Derecha (60%): Gráfico de Líneas Mensual -->
+      <div id="cardLine" class="pbi-card p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white">Evolución Mensual: Promedio Académico vs. Uso de Redes Sociales</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Serie cronológica Ene - Dic (haz clic en un punto para filtrar por mes)</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs">
+            <span class="inline-flex items-center gap-1.5 text-slate-200 font-medium">
+              <span class="w-3 h-1 rounded-full bg-[#F8FAFC]"></span> Promedio (pts)
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-[#FF4D5A] font-medium">
+              <span class="w-3 h-1 rounded-full bg-[#FF4D5A]"></span> Redes (hrs/día)
+            </span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-[240px]">
+          <canvas id="chartLine"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. FILA INFERIOR (3 GRÁFICOS DE BARRAS HORIZONTALES LIMPIOS) -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Barra Horizontal 1: Promedio Académico por Alcaldía CDMX -->
+      <div id="cardBarAlcaldia" class="pbi-card p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white">Promedio Académico por Alcaldía CDMX</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Ordenado de mayor a menor rendimiento</p>
+          </div>
+          <span id="badgeAlcaldiaFilter" class="hidden px-2 py-0.5 text-[11px] font-semibold rounded-md bg-[#E63946]/20 text-[#FF4D5A] border border-[#E63946]/40">
+            Filtrado
+          </span>
+        </div>
+        <div class="relative w-full h-[290px]">
+          <canvas id="chartBarAlcaldia"></canvas>
+        </div>
+      </div>
+
+      <!-- Barra Horizontal 2: Horas en Redes Sociales por Perfil Conductual -->
+      <div id="cardBarPerfil" class="pbi-card p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex items-start justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white">Horas en Redes Sociales por Perfil Conductual</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Promedio diario de consumo en pantalla</p>
+          </div>
+          <span class="text-[11px] font-medium text-slate-500">Hrs/día</span>
+        </div>
+        <div class="relative w-full h-[290px]">
+          <canvas id="chartBarPerfil"></canvas>
+        </div>
+      </div>
+
+      <!-- Barra Horizontal 3: Promedio Real vs. Predicho (RL) por Semestre (1° a 9°) -->
+      <div class="pbi-card p-4 sm:p-5 flex flex-col justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold text-white">Promedio Real vs. Predicho (RL) por Semestre</h2>
+            <p class="text-xs text-slate-400 mt-0.5">Comparativa del 1° al 9° semestre universitario</p>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] shrink-0">
+            <span class="inline-flex items-center gap-1 text-slate-200 font-medium">
+              <span class="w-2.5 h-2.5 rounded-sm bg-[#FF4D5A]"></span> Real
+            </span>
+            <span class="inline-flex items-center gap-1 text-slate-400 font-medium">
+              <span class="w-2.5 h-2.5 rounded-sm bg-[#991B1B]"></span> Predicho
+            </span>
+          </div>
+        </div>
+        <div class="relative w-full h-[290px]">
+          <canvas id="chartBarSemestre"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- PIE DE PÁGINA DISCRETO -->
+    <footer class="pt-1 pb-3 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-2">
+      <span>Proyecto: Modelado Estadístico y Predicción del Comportamiento Digital en Universitarios de la CDMX (CRISP-DM)</span>
+      <span>Tip: Haz clic sobre cualquier barra o segmento de dona para aplicar selección cruzada</span>
+    </footer>
+  </div>
+
+  <!-- MODAL INTERACTIVO: SIMULADOR DE REGRESIÓN LINEAL MÚLTIPLE -->
+  <div id="simulatorModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="bg-[#0D1017] border-[1.5px] border-[#2C3240] rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+      <!-- Header Modal -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-[#2C3240]">
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-[#FF4D5A]">Modelo Predictivo en Vivo</span>
+          <h3 class="text-lg font-extrabold text-white">Simulador de Regresión Lineal Múltiple</h3>
+        </div>
+        <button id="btnCloseSimulator" type="button" class="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-[#1A202E] transition cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Cuerpo Modal -->
+      <div class="p-6 space-y-5">
+        <!-- Ecuación Matemática -->
+        <div class="p-3.5 rounded-xl bg-[#131722] border border-[#2C3240] text-xs font-mono text-slate-300 overflow-x-auto">
+          <span class="text-[#FF4D5A] font-bold">Promedio</span> = 8.2882
+          <span class="text-rose-400">- 0.2649</span>(Redes)
+          <span class="text-emerald-400">+ 0.3671</span>(Productividad)
+          <span class="text-rose-400">- 0.1531</span>(Ocio)
+          <span class="text-rose-400">- 0.2634</span>(Nocturno)
+          <span class="text-rose-400">- 0.0011</span>(Desbloqueos)
+        </div>
+
+        <!-- Botones de Arquetipos Rápidos -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-slate-400 mr-1">Probar perfil ejemplo:</span>
+          <button type="button" onclick="applySimPreset('productivo')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131722] hover:bg-[#1E2536] text-slate-200 border border-[#2C3240] transition cursor-pointer">
+            Estudiante Productivo
+          </button>
+          <button type="button" onclick="applySimPreset('ocio')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131722] hover:bg-[#1E2536] text-slate-200 border border-[#2C3240] transition cursor-pointer">
+            Consumidor de Ocio
+          </button>
+          <button type="button" onclick="applySimPreset('procrastinador')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131722] hover:bg-[#1E2536] text-slate-200 border border-[#2C3240] transition cursor-pointer">
+            Perfil Procrastinador
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          <!-- Sliders (7 cols) -->
+          <div class="md:col-span-7 space-y-4">
+            <!-- Slider 1: Redes Sociales -->
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-slate-300">Horas en Redes Sociales / día</span>
+                <span id="valSimRedes" class="font-bold text-[#FF4D5A]">3.40 hrs</span>
+              </div>
+              <input id="simRedes" type="range" min="0" max="9" step="0.1" value="3.4" class="pbi-slider" />
+            </div>
+
+            <!-- Slider 2: Productividad -->
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-slate-300">Horas de Productividad / Estudio</span>
+                <span id="valSimProd" class="font-bold text-emerald-400">2.60 hrs</span>
+              </div>
+              <input id="simProd" type="range" min="0" max="7" step="0.1" value="2.6" class="pbi-slider" />
+            </div>
+
+            <!-- Slider 3: Ocio / Streaming -->
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-slate-300">Horas de Ocio / Streaming</span>
+                <span id="valSimOcio" class="font-bold text-slate-200">2.60 hrs</span>
+              </div>
+              <input id="simOcio" type="range" min="0" max="7" step="0.1" value="2.6" class="pbi-slider" />
+            </div>
+
+            <!-- Slider 4: Uso Nocturno -->
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-slate-300">Horas de Uso Nocturno (madrugada)</span>
+                <span id="valSimNoct" class="font-bold text-[#FF4D5A]">1.40 hrs</span>
+              </div>
+              <input id="simNoct" type="range" min="0" max="5" step="0.1" value="1.4" class="pbi-slider" />
+            </div>
+
+            <!-- Slider 5: Desbloqueos -->
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <span class="font-medium text-slate-300">Desbloqueos del teléfono al día</span>
+                <span id="valSimDesb" class="font-bold text-slate-200">95 desbloqueos</span>
+              </div>
+              <input id="simDesb" type="range" min="20" max="220" step="1" value="95" class="pbi-slider" />
+            </div>
+          </div>
+
+          <!-- Resultado Predicción (5 cols) -->
+          <div class="md:col-span-5 pbi-card p-5 flex flex-col justify-between space-y-4">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Calificación Estimada (RL)</span>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span id="simResultScore" class="text-5xl font-extrabold text-[#FF4D5A]">7.47</span>
+                <span class="text-sm text-slate-400">/ 10.00</span>
+              </div>
+              <p id="simRawNote" class="text-[11px] text-slate-500 mt-1">Valor exacto de ecuación: 7.47</p>
+            </div>
+
+            <div class="space-y-2.5 pt-2 border-t border-[#2C3240]">
+              <div>
+                <span class="block text-[11px] text-slate-400">Diagnóstico de Riesgo Académico</span>
+                <span id="simRiskBadge" class="inline-block mt-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#E63946]/20 text-[#FF4D5A] border border-[#E63946]/40">
+                  Con Riesgo (&lt; 7.5)
+                </span>
+              </div>
+
+              <div>
+                <span class="block text-[11px] text-slate-400">Perfil Conductual Más Cercano</span>
+                <span id="simClusterBadge" class="inline-block mt-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#1A202E] text-white border border-[#2C3240]">
+                  Consumidores de Ocio
+                </span>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#2C3240] text-[11px] text-slate-400 space-y-1">
+              <div class="flex justify-between">
+                <span>Base (Intercepto):</span>
+                <span class="text-slate-200 font-mono">+8.29 pts</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Aporte Productividad:</span>
+                <span id="simContribPos" class="text-emerald-400 font-mono">+0.95 pts</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Impacto Ocio/Redes:</span>
+                <span id="simContribNeg" class="text-[#FF4D5A] font-mono">-1.77 pts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT PRINCIPAL CON LOS 346 REGISTROS EXACTOS Y LÓGICA DINÁMICA -->
+  <script>
+    // =========================================================================
+    // 1. BASE DE DATOS EMBEBIDA (346 REGISTROS REALES DEL PROYECTO)
+    // =========================================================================
+    const DATA = [{"id":"EST-001","m":7,"a":"Gustavo A. Madero","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.8,"hp":1.76,"ho":3.34,"hn":1.69,"d":103,"pa":6.2,"pr":6.88},{"id":"EST-002","m":4,"a":"Cuauhtémoc","s":1,"p":"Procrastinadores","r":1,"hr":4.95,"hp":0.98,"ho":3.53,"hn":2.77,"d":142,"pa":5.3,"pr":5.93},{"id":"EST-003","m":11,"a":"Coyoacán","s":6,"p":"Procrastinadores","r":1,"hr":5.94,"hp":1.41,"ho":4.1,"hn":3.05,"d":158,"pa":5.68,"pr":5.61},{"id":"EST-004","m":8,"a":"Iztacalco","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.25,"hp":1.1,"ho":3.2,"hn":1.38,"d":96,"pa":6.41,"pr":6.93},{"id":"EST-005","m":5,"a":"Iztacalco","s":8,"p":"Productivos","r":0,"hr":1.06,"hp":4.64,"ho":1.18,"hn":0.7,"d":58,"pa":9.35,"pr":9.27},{"id":"EST-006","m":7,"a":"Coyoacán","s":5,"p":"Productivos","r":0,"hr":2.07,"hp":3.39,"ho":1.25,"hn":0.36,"d":51,"pa":8.53,"pr":8.64},{"id":"EST-007","m":10,"a":"Iztacalco","s":7,"p":"Productivos","r":0,"hr":1.71,"hp":3.42,"ho":1.83,"hn":0.23,"d":55,"pa":8.57,"pr":8.7},{"id":"EST-008","m":3,"a":"Coyoacán","s":2,"p":"Procrastinadores","r":1,"hr":6.9,"hp":1.2,"ho":4.53,"hn":1.51,"d":144,"pa":5.82,"pr":5.63},{"id":"EST-009","m":7,"a":"Venustiano Carranza","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.36,"hp":2.74,"ho":2.54,"hn":1.86,"d":133,"pa":7.24,"pr":7.39},{"id":"EST-010","m":11,"a":"Coyoacán","s":2,"p":"Procrastinadores","r":1,"hr":5.2,"hp":1.83,"ho":5.02,"hn":2.09,"d":127,"pa":5.91,"pr":6.12},{"id":"EST-011","m":11,"a":"Gustavo A. Madero","s":4,"p":"Productivos","r":0,"hr":0.93,"hp":3.07,"ho":0.7,"hn":0.27,"d":57,"pa":9.17,"pr":8.97},{"id":"EST-012","m":8,"a":"Coyoacán","s":1,"p":"Procrastinadores","r":1,"hr":7.0,"hp":0.6,"ho":4.49,"hn":2.27,"d":136,"pa":5.29,"pr":5.2},{"id":"EST-014","m":5,"a":"Gustavo A. Madero","s":9,"p":"Productivos","r":0,"hr":1.28,"hp":3.38,"ho":0.89,"hn":0.33,"d":49,"pa":9.5,"pr":8.93},{"id":"EST-015","m":4,"a":"Venustiano Carranza","s":1,"p":"Productivos","r":0,"hr":2.31,"hp":3.34,"ho":0.78,"hn":0.64,"d":50,"pa":8.81,"pr":8.55},{"id":"EST-016","m":8,"a":"Gustavo A. Madero","s":9,"p":"Productivos","r":0,"hr":1.7,"hp":2.59,"ho":1.97,"hn":1.04,"d":49,"pa":8.09,"pr":8.19},{"id":"EST-017","m":8,"a":"Venustiano Carranza","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.5,"hp":2.3,"ho":3.36,"hn":2.1,"d":88,"pa":6.68,"pr":7.05},{"id":"EST-018","m":3,"a":"Tlalpan","s":6,"p":"Consumidores de Ocio","r":1,"hr":2.33,"hp":1.66,"ho":2.88,"hn":2.02,"d":82,"pa":7.42,"pr":7.27},{"id":"EST-019","m":6,"a":"Iztacalco","s":7,"p":"Consumidores de Ocio","r":0,"hr":3.29,"hp":2.81,"ho":4.67,"hn":1.09,"d":83,"pa":7.8,"pr":7.36},{"id":"EST-020","m":5,"a":"Iztacalco","s":3,"p":"Productivos","r":0,"hr":1.94,"hp":5.28,"ho":1.49,"hn":0.39,"d":66,"pa":9.74,"pr":9.26},{"id":"EST-021","m":2,"a":"Iztacalco","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.87,"hp":2.4,"ho":3.65,"hn":1.77,"d":116,"pa":7.24,"pr":7.0},{"id":"EST-022","m":8,"a":"Iztacalco","s":5,"p":"Productivos","r":0,"hr":1.52,"hp":3.92,"ho":1.8,"hn":0.25,"d":63,"pa":8.82,"pr":8.92},{"id":"EST-023","m":12,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":1.61,"hp":4.82,"ho":1.3,"hn":0.51,"d":38,"pa":9.55,"pr":9.22},{"id":"EST-024","m":6,"a":"Benito Juárez","s":5,"p":"Consumidores de Ocio","r":0,"hr":3.75,"hp":3.4,"ho":2.68,"hn":1.39,"d":96,"pa":8.23,"pr":7.63},{"id":"EST-025","m":2,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.23,"hp":2.27,"ho":3.33,"hn":1.37,"d":83,"pa":7.39,"pr":7.32},{"id":"EST-026","m":12,"a":"Iztapalapa","s":9,"p":"Procrastinadores","r":1,"hr":6.57,"hp":0.59,"ho":3.72,"hn":1.98,"d":166,"pa":5.2,"pr":5.49},{"id":"EST-027","m":5,"a":"Cuauhtémoc","s":2,"p":"Productivos","r":0,"hr":1.32,"hp":4.1,"ho":1.98,"hn":0.48,"d":50,"pa":9.82,"pr":8.96},{"id":"EST-028","m":1,"a":"Iztacalco","s":3,"p":"Consumidores de Ocio","r":0,"hr":2.29,"hp":0.8,"ho":3.21,"hn":1.1,"d":73,"pa":7.57,"pr":7.2},{"id":"EST-029","m":12,"a":"Cuauhtémoc","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.47,"hp":1.76,"ho":2.0,"hn":1.65,"d":103,"pa":7.13,"pr":7.18},{"id":"EST-030","m":10,"a":"Iztapalapa","s":1,"p":"Productivos","r":0,"hr":2.52,"hp":2.94,"ho":0.44,"hn":0.29,"d":57,"pa":8.59,"pr":8.49},{"id":"EST-031","m":6,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":0,"hr":3.13,"hp":2.31,"ho":2.02,"hn":1.88,"d":90,"pa":7.87,"pr":7.41},{"id":"EST-032","m":12,"a":"Benito Juárez","s":6,"p":"Productivos","r":0,"hr":1.77,"hp":4.17,"ho":1.48,"hn":0.63,"d":66,"pa":9.47,"pr":8.87},{"id":"EST-033","m":9,"a":"Coyoacán","s":8,"p":"Productivos","r":0,"hr":1.7,"hp":4.37,"ho":1.16,"hn":0.93,"d":48,"pa":9.72,"pr":8.94},{"id":"EST-034","m":1,"a":"Tlalpan","s":9,"p":"Procrastinadores","r":1,"hr":5.56,"hp":0.38,"ho":3.72,"hn":1.99,"d":158,"pa":5.37,"pr":5.72},{"id":"EST-035","m":11,"a":"Benito Juárez","s":5,"p":"Consumidores de Ocio","r":1,"hr":5.2,"hp":2.22,"ho":3.19,"hn":1.0,"d":99,"pa":6.38,"pr":6.84},{"id":"EST-036","m":11,"a":"Cuauhtémoc","s":3,"p":"Procrastinadores","r":1,"hr":6.31,"hp":1.31,"ho":2.73,"hn":2.37,"d":137,"pa":5.22,"pr":5.87},{"id":"EST-037","m":10,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":1,"hr":4.35,"hp":2.63,"ho":2.75,"hn":1.31,"d":95,"pa":6.26,"pr":7.21},{"id":"EST-038","m":12,"a":"Iztacalco","s":5,"p":"Productivos","r":0,"hr":1.48,"hp":3.25,"ho":0.7,"hn":0.42,"d":83,"pa":9.16,"pr":8.81},{"id":"EST-039","m":12,"a":"Benito Juárez","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.36,"hp":2.44,"ho":3.88,"hn":1.67,"d":93,"pa":7.06,"pr":7.17},{"id":"EST-040","m":3,"a":"Cuauhtémoc","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.79,"hp":2.34,"ho":3.53,"hn":1.55,"d":110,"pa":6.83,"pr":7.08},{"id":"EST-041","m":12,"a":"Venustiano Carranza","s":4,"p":"Productivos","r":0,"hr":3.36,"hp":3.96,"ho":2.24,"hn":0.29,"d":82,"pa":8.74,"pr":8.31},{"id":"EST-042","m":7,"a":"Gustavo A. Madero","s":9,"p":"Consumidores de Ocio","r":1,"hr":2.84,"hp":1.81,"ho":2.68,"hn":1.47,"d":101,"pa":7.13,"pr":7.33},{"id":"EST-043","m":4,"a":"Iztapalapa","s":9,"p":"Productivos","r":0,"hr":1.59,"hp":5.51,"ho":2.06,"hn":0.63,"d":58,"pa":9.38,"pr":9.3},{"id":"EST-044","m":9,"a":"Benito Juárez","s":2,"p":"Procrastinadores","r":1,"hr":6.15,"hp":0.59,"ho":3.37,"hn":1.4,"d":147,"pa":5.98,"pr":5.84},{"id":"EST-045","m":3,"a":"Iztapalapa","s":8,"p":"Productivos","r":0,"hr":1.36,"hp":5.06,"ho":0.59,"hn":0.06,"d":61,"pa":10.0,"pr":9.58},{"id":"EST-046","m":5,"a":"Venustiano Carranza","s":8,"p":"Consumidores de Ocio","r":1,"hr":4.48,"hp":1.82,"ho":3.66,"hn":1.28,"d":88,"pa":7.07,"pr":6.77},{"id":"EST-047","m":3,"a":"Cuauhtémoc","s":7,"p":"Consumidores de Ocio","r":1,"hr":3.76,"hp":1.15,"ho":3.93,"hn":1.85,"d":80,"pa":6.71,"pr":6.57},{"id":"EST-048","m":7,"a":"Gustavo A. Madero","s":8,"p":"Consumidores de Ocio","r":0,"hr":3.65,"hp":2.26,"ho":2.51,"hn":1.03,"d":91,"pa":7.86,"pr":7.4},{"id":"EST-049","m":5,"a":"Benito Juárez","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.68,"hp":1.88,"ho":3.44,"hn":0.3,"d":112,"pa":6.58,"pr":7.31},{"id":"EST-050","m":9,"a":"Benito Juárez","s":6,"p":"Productivos","r":0,"hr":1.42,"hp":2.9,"ho":0.55,"hn":0.85,"d":51,"pa":8.85,"pr":8.64},{"id":"EST-051","m":7,"a":"Iztacalco","s":1,"p":"Procrastinadores","r":1,"hr":5.56,"hp":1.34,"ho":3.67,"hn":1.63,"d":161,"pa":5.85,"pr":6.15},{"id":"EST-052","m":2,"a":"Tlalpan","s":7,"p":"Procrastinadores","r":1,"hr":4.2,"hp":2.22,"ho":4.95,"hn":2.91,"d":129,"pa":5.72,"pr":6.33},{"id":"EST-053","m":4,"a":"Gustavo A. Madero","s":1,"p":"Procrastinadores","r":1,"hr":5.31,"hp":2.14,"ho":3.94,"hn":2.66,"d":162,"pa":6.18,"pr":6.17},{"id":"EST-054","m":9,"a":"Cuauhtémoc","s":9,"p":"Procrastinadores","r":1,"hr":5.37,"hp":1.0,"ho":3.54,"hn":2.38,"d":155,"pa":5.85,"pr":5.91},{"id":"EST-055","m":12,"a":"Iztapalapa","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.81,"hp":2.05,"ho":2.96,"hn":0.5,"d":108,"pa":7.48,"pr":7.35},{"id":"EST-056","m":2,"a":"Tlalpan","s":1,"p":"Procrastinadores","r":1,"hr":6.5,"hp":0.2,"ho":5.48,"hn":2.32,"d":164,"pa":5.2,"pr":5.03},{"id":"EST-057","m":10,"a":"Gustavo A. Madero","s":7,"p":"Productivos","r":0,"hr":1.91,"hp":2.96,"ho":0.89,"hn":1.07,"d":55,"pa":8.53,"pr":8.4},{"id":"EST-058","m":9,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":2.04,"hp":4.2,"ho":1.28,"hn":0.61,"d":91,"pa":8.84,"pr":8.82},{"id":"EST-059","m":10,"a":"Tlalpan","s":5,"p":"Productivos","r":0,"hr":1.7,"hp":4.64,"ho":1.75,"hn":0.86,"d":66,"pa":8.51,"pr":8.95},{"id":"EST-060","m":5,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":1,"hr":4.44,"hp":1.41,"ho":3.11,"hn":1.0,"d":90,"pa":6.88,"pr":6.8},{"id":"EST-061","m":2,"a":"Iztapalapa","s":8,"p":"Consumidores de Ocio","r":0,"hr":3.52,"hp":2.35,"ho":4.03,"hn":1.48,"d":87,"pa":7.51,"pr":7.13},{"id":"EST-062","m":4,"a":"Venustiano Carranza","s":3,"p":"Productivos","r":0,"hr":2.19,"hp":2.82,"ho":1.5,"hn":0.71,"d":53,"pa":8.88,"pr":8.28},{"id":"EST-063","m":12,"a":"Venustiano Carranza","s":7,"p":"Procrastinadores","r":1,"hr":5.46,"hp":1.16,"ho":3.44,"hn":2.41,"d":111,"pa":7.33,"pr":5.98},{"id":"EST-064","m":12,"a":"Coyoacán","s":3,"p":"Consumidores de Ocio","r":1,"hr":4.42,"hp":1.59,"ho":2.21,"hn":0.44,"d":80,"pa":6.53,"pr":7.16},{"id":"EST-065","m":7,"a":"Coyoacán","s":6,"p":"Productivos","r":0,"hr":2.42,"hp":4.61,"ho":0.86,"hn":1.18,"d":71,"pa":8.62,"pr":8.77},{"id":"EST-066","m":12,"a":"Gustavo A. Madero","s":6,"p":"Productivos","r":0,"hr":1.8,"hp":3.47,"ho":1.93,"hn":0.64,"d":110,"pa":9.64,"pr":8.53},{"id":"EST-067","m":8,"a":"Iztapalapa","s":3,"p":"Productivos","r":0,"hr":2.29,"hp":4.25,"ho":1.5,"hn":0.76,"d":68,"pa":8.83,"pr":8.71},{"id":"EST-068","m":3,"a":"Iztapalapa","s":7,"p":"Procrastinadores","r":1,"hr":5.69,"hp":1.07,"ho":2.92,"hn":2.23,"d":97,"pa":5.82,"pr":6.01},{"id":"EST-069","m":1,"a":"Coyoacán","s":3,"p":"Productivos","r":0,"hr":1.11,"hp":2.92,"ho":1.29,"hn":0.92,"d":70,"pa":8.04,"pr":8.59},{"id":"EST-070","m":4,"a":"Benito Juárez","s":8,"p":"Procrastinadores","r":1,"hr":4.71,"hp":1.57,"ho":2.72,"hn":2.27,"d":151,"pa":5.99,"pr":6.45},{"id":"EST-071","m":2,"a":"Cuauhtémoc","s":4,"p":"Procrastinadores","r":1,"hr":5.69,"hp":0.43,"ho":3.06,"hn":2.59,"d":99,"pa":5.72,"pr":5.68},{"id":"EST-072","m":8,"a":"Cuauhtémoc","s":1,"p":"Productivos","r":0,"hr":1.59,"hp":4.24,"ho":1.31,"hn":0.91,"d":59,"pa":8.77,"pr":8.9},{"id":"EST-073","m":4,"a":"Iztacalco","s":4,"p":"Productivos","r":0,"hr":1.66,"hp":4.23,"ho":1.22,"hn":0.51,"d":48,"pa":8.76,"pr":9.01},{"id":"EST-074","m":2,"a":"Gustavo A. Madero","s":7,"p":"Consumidores de Ocio","r":1,"hr":4.34,"hp":1.97,"ho":2.48,"hn":1.98,"d":120,"pa":7.14,"pr":6.83},{"id":"EST-075","m":6,"a":"Iztacalco","s":4,"p":"Procrastinadores","r":1,"hr":5.33,"hp":1.72,"ho":2.99,"hn":2.57,"d":117,"pa":6.99,"pr":6.22},{"id":"EST-076","m":6,"a":"Gustavo A. Madero","s":6,"p":"Procrastinadores","r":1,"hr":4.53,"hp":1.25,"ho":4.17,"hn":2.65,"d":133,"pa":5.99,"pr":6.09},{"id":"EST-077","m":10,"a":"Gustavo A. Madero","s":9,"p":"Procrastinadores","r":1,"hr":5.64,"hp":1.03,"ho":4.47,"hn":3.73,"d":124,"pa":5.2,"pr":5.36},{"id":"EST-078","m":4,"a":"Tlalpan","s":1,"p":"Productivos","r":0,"hr":1.56,"hp":5.86,"ho":0.8,"hn":0.99,"d":81,"pa":9.29,"pr":9.5},{"id":"EST-079","m":6,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.7,"hp":3.08,"ho":2.63,"hn":1.22,"d":81,"pa":7.12,"pr":7.6},{"id":"EST-080","m":2,"a":"Iztacalco","s":7,"p":"Productivos","r":0,"hr":1.28,"hp":2.82,"ho":1.22,"hn":0.27,"d":61,"pa":8.14,"pr":8.7},{"id":"EST-081","m":10,"a":"Iztacalco","s":1,"p":"Procrastinadores","r":1,"hr":5.9,"hp":1.52,"ho":1.81,"hn":2.62,"d":167,"pa":5.47,"pr":6.11},{"id":"EST-082","m":12,"a":"Benito Juárez","s":4,"p":"Consumidores de Ocio","r":1,"hr":4.47,"hp":2.35,"ho":2.41,"hn":1.28,"d":102,"pa":7.08,"pr":7.13},{"id":"EST-083","m":2,"a":"Coyoacán","s":6,"p":"Consumidores de Ocio","r":1,"hr":3.68,"hp":1.55,"ho":3.02,"hn":0.73,"d":89,"pa":6.76,"pr":7.16},{"id":"EST-084","m":10,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":1.23,"hp":4.79,"ho":1.75,"hn":0.68,"d":42,"pa":9.12,"pr":9.21},{"id":"EST-085","m":4,"a":"Iztacalco","s":5,"p":"Consumidores de Ocio","r":1,"hr":4.15,"hp":2.19,"ho":4.52,"hn":1.46,"d":95,"pa":6.63,"pr":6.81},{"id":"EST-086","m":8,"a":"Benito Juárez","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.39,"hp":2.01,"ho":3.4,"hn":1.68,"d":77,"pa":6.52,"pr":7.1},{"id":"EST-087","m":7,"a":"Iztacalco","s":6,"p":"Consumidores de Ocio","r":0,"hr":3.95,"hp":1.35,"ho":2.61,"hn":1.11,"d":147,"pa":7.98,"pr":6.93},{"id":"EST-089","m":12,"a":"Benito Juárez","s":4,"p":"Procrastinadores","r":1,"hr":5.84,"hp":1.26,"ho":3.0,"hn":3.0,"d":133,"pa":5.32,"pr":5.79},{"id":"EST-090","m":9,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.68,"hp":1.56,"ho":2.92,"hn":1.3,"d":111,"pa":7.2,"pr":7.01},{"id":"EST-091","m":8,"a":"Iztacalco","s":4,"p":"Productivos","r":0,"hr":1.59,"hp":4.45,"ho":1.9,"hn":0.67,"d":58,"pa":8.45,"pr":8.95},{"id":"EST-092","m":5,"a":"Venustiano Carranza","s":8,"p":"Procrastinadores","r":1,"hr":4.64,"hp":0.95,"ho":3.05,"hn":2.29,"d":139,"pa":6.39,"pr":6.21},{"id":"EST-093","m":2,"a":"Iztapalapa","s":8,"p":"Consumidores de Ocio","r":1,"hr":5.54,"hp":1.34,"ho":3.66,"hn":1.21,"d":115,"pa":6.12,"pr":6.3},{"id":"EST-094","m":5,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":0,"hr":2.45,"hp":2.46,"ho":3.97,"hn":1.79,"d":88,"pa":8.07,"pr":7.4},{"id":"EST-095","m":8,"a":"Cuauhtémoc","s":4,"p":"Procrastinadores","r":1,"hr":5.73,"hp":0.93,"ho":3.05,"hn":2.22,"d":128,"pa":5.86,"pr":5.92},{"id":"EST-096","m":10,"a":"Venustiano Carranza","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.41,"hp":2.1,"ho":3.21,"hn":1.78,"d":109,"pa":6.47,"pr":7.1},{"id":"EST-097","m":9,"a":"Venustiano Carranza","s":3,"p":"Productivos","r":1,"hr":1.8,"hp":2.66,"ho":1.94,"hn":1.21,"d":70,"pa":7.44,"pr":8.13},{"id":"EST-098","m":12,"a":"Benito Juárez","s":3,"p":"Consumidores de Ocio","r":0,"hr":3.68,"hp":2.56,"ho":2.5,"hn":0.3,"d":82,"pa":7.82,"pr":7.7},{"id":"EST-099","m":12,"a":"Iztapalapa","s":4,"p":"Productivos","r":0,"hr":0.86,"hp":3.95,"ho":1.19,"hn":0.67,"d":59,"pa":8.79,"pr":9.1},{"id":"EST-100","m":12,"a":"Iztacalco","s":4,"p":"Productivos","r":0,"hr":2.2,"hp":3.67,"ho":1.19,"hn":0.22,"d":51,"pa":8.38,"pr":8.74},{"id":"EST-101","m":9,"a":"Benito Juárez","s":5,"p":"Productivos","r":0,"hr":1.51,"hp":5.17,"ho":0.51,"hn":0.02,"d":78,"pa":9.54,"pr":9.59},{"id":"EST-102","m":1,"a":"Coyoacán","s":4,"p":"Consumidores de Ocio","r":1,"hr":2.83,"hp":2.72,"ho":2.48,"hn":2.03,"d":104,"pa":7.33,"pr":7.52},{"id":"EST-103","m":9,"a":"Gustavo A. Madero","s":8,"p":"Consumidores de Ocio","r":1,"hr":4.81,"hp":2.22,"ho":3.42,"hn":1.42,"d":115,"pa":7.2,"pr":6.79},{"id":"EST-104","m":7,"a":"Tlalpan","s":6,"p":"Consumidores de Ocio","r":1,"hr":3.32,"hp":1.65,"ho":3.22,"hn":1.03,"d":128,"pa":7.25,"pr":7.16},{"id":"EST-105","m":9,"a":"Iztacalco","s":6,"p":"Procrastinadores","r":1,"hr":5.27,"hp":1.19,"ho":2.39,"hn":1.82,"d":166,"pa":5.96,"pr":6.31},{"id":"EST-106","m":8,"a":"Gustavo A. Madero","s":8,"p":"Productivos","r":0,"hr":1.08,"hp":4.23,"ho":1.79,"hn":0.72,"d":71,"pa":8.8,"pr":9.02},{"id":"EST-107","m":1,"a":"Iztacalco","s":7,"p":"Consumidores de Ocio","r":0,"hr":2.3,"hp":3.0,"ho":2.67,"hn":1.2,"d":115,"pa":8.25,"pr":7.96},{"id":"EST-108","m":12,"a":"Gustavo A. Madero","s":8,"p":"Procrastinadores","r":1,"hr":6.01,"hp":2.18,"ho":3.02,"hn":2.96,"d":139,"pa":6.0,"pr":6.05},{"id":"EST-109","m":8,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":2.36,"hp":4.21,"ho":1.47,"hn":0.82,"d":52,"pa":8.31,"pr":8.68},{"id":"EST-110","m":8,"a":"Iztacalco","s":9,"p":"Productivos","r":0,"hr":1.08,"hp":2.23,"ho":2.23,"hn":0.17,"d":54,"pa":8.45,"pr":8.44},{"id":"EST-111","m":11,"a":"Iztacalco","s":1,"p":"Productivos","r":0,"hr":1.75,"hp":4.45,"ho":1.63,"hn":0.33,"d":55,"pa":9.19,"pr":9.04},{"id":"EST-112","m":3,"a":"Coyoacán","s":8,"p":"Productivos","r":0,"hr":1.48,"hp":5.09,"ho":1.45,"hn":0.72,"d":67,"pa":9.79,"pr":9.25},{"id":"EST-113","m":1,"a":"Benito Juárez","s":4,"p":"Procrastinadores","r":1,"hr":5.76,"hp":0.45,"ho":3.96,"hn":2.01,"d":125,"pa":5.8,"pr":5.67},{"id":"EST-114","m":8,"a":"Coyoacán","s":4,"p":"Procrastinadores","r":1,"hr":6.71,"hp":1.11,"ho":3.88,"hn":3.42,"d":143,"pa":6.13,"pr":5.23},{"id":"EST-115","m":3,"a":"Venustiano Carranza","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.7,"hp":1.04,"ho":3.43,"hn":1.45,"d":115,"pa":7.0,"pr":6.71},{"id":"EST-116","m":3,"a":"Iztapalapa","s":8,"p":"Procrastinadores","r":1,"hr":5.48,"hp":0.49,"ho":3.41,"hn":1.89,"d":124,"pa":6.03,"pr":5.88},{"id":"EST-117","m":1,"a":"Iztapalapa","s":5,"p":"Procrastinadores","r":1,"hr":7.1,"hp":1.3,"ho":2.52,"hn":2.67,"d":166,"pa":5.2,"pr":5.57},{"id":"EST-118","m":11,"a":"Tlalpan","s":8,"p":"Productivos","r":0,"hr":1.53,"hp":3.81,"ho":0.81,"hn":0.69,"d":56,"pa":9.14,"pr":8.91},{"id":"EST-119","m":5,"a":"Iztapalapa","s":1,"p":"Procrastinadores","r":1,"hr":4.8,"hp":0.88,"ho":4.25,"hn":2.18,"d":179,"pa":5.78,"pr":5.96},{"id":"EST-120","m":10,"a":"Venustiano Carranza","s":9,"p":"Productivos","r":0,"hr":3.46,"hp":2.66,"ho":1.91,"hn":0.6,"d":64,"pa":8.3,"pr":7.82},{"id":"EST-121","m":7,"a":"Iztacalco","s":6,"p":"Procrastinadores","r":1,"hr":5.1,"hp":2.38,"ho":3.09,"hn":2.51,"d":175,"pa":7.23,"pr":6.47},{"id":"EST-122","m":10,"a":"Venustiano Carranza","s":3,"p":"Procrastinadores","r":1,"hr":7.46,"hp":1.7,"ho":4.52,"hn":2.76,"d":156,"pa":5.2,"pr":5.29},{"id":"EST-123","m":9,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":0,"hr":2.73,"hp":2.1,"ho":2.78,"hn":1.12,"d":104,"pa":7.99,"pr":7.54},{"id":"EST-124","m":12,"a":"Tlalpan","s":9,"p":"Productivos","r":0,"hr":1.64,"hp":4.98,"ho":0.63,"hn":0.44,"d":47,"pa":8.61,"pr":9.38},{"id":"EST-125","m":7,"a":"Gustavo A. Madero","s":6,"p":"Productivos","r":0,"hr":1.56,"hp":3.7,"ho":1.96,"hn":0.69,"d":43,"pa":9.54,"pr":8.71},{"id":"EST-126","m":9,"a":"Venustiano Carranza","s":7,"p":"Consumidores de Ocio","r":0,"hr":4.15,"hp":2.45,"ho":2.74,"hn":0.92,"d":85,"pa":7.7,"pr":7.32},{"id":"EST-127","m":8,"a":"Iztacalco","s":1,"p":"Procrastinadores","r":1,"hr":7.3,"hp":1.87,"ho":3.16,"hn":1.73,"d":141,"pa":5.2,"pr":5.88},{"id":"EST-128","m":12,"a":"Coyoacán","s":5,"p":"Procrastinadores","r":1,"hr":5.89,"hp":1.03,"ho":3.18,"hn":1.44,"d":150,"pa":5.73,"pr":6.08},{"id":"EST-129","m":2,"a":"Venustiano Carranza","s":5,"p":"Productivos","r":0,"hr":1.02,"hp":1.8,"ho":1.19,"hn":1.03,"d":81,"pa":8.16,"pr":8.22},{"id":"EST-130","m":1,"a":"Gustavo A. Madero","s":4,"p":"Consumidores de Ocio","r":0,"hr":2.88,"hp":2.38,"ho":2.2,"hn":1.42,"d":105,"pa":8.14,"pr":7.6},{"id":"EST-131","m":7,"a":"Coyoacán","s":6,"p":"Consumidores de Ocio","r":0,"hr":3.23,"hp":1.98,"ho":2.29,"hn":0.97,"d":87,"pa":7.63,"pr":7.48},{"id":"EST-132","m":7,"a":"Benito Juárez","s":7,"p":"Productivos","r":0,"hr":2.06,"hp":3.16,"ho":1.95,"hn":0.42,"d":57,"pa":8.17,"pr":8.44},{"id":"EST-133","m":8,"a":"Gustavo A. Madero","s":9,"p":"Productivos","r":0,"hr":0.39,"hp":4.51,"ho":1.57,"hn":0.42,"d":58,"pa":9.78,"pr":9.44},{"id":"EST-134","m":5,"a":"Coyoacán","s":1,"p":"Consumidores de Ocio","r":1,"hr":2.21,"hp":2.22,"ho":3.46,"hn":0.8,"d":97,"pa":7.1,"pr":7.72},{"id":"EST-135","m":3,"a":"Coyoacán","s":6,"p":"Procrastinadores","r":1,"hr":6.02,"hp":1.08,"ho":2.15,"hn":3.1,"d":120,"pa":5.27,"pr":5.78},{"id":"EST-136","m":12,"a":"Tlalpan","s":7,"p":"Consumidores de Ocio","r":0,"hr":3.36,"hp":2.79,"ho":2.19,"hn":1.32,"d":99,"pa":7.87,"pr":7.63},{"id":"EST-137","m":8,"a":"Iztacalco","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.42,"hp":1.88,"ho":2.32,"hn":1.33,"d":72,"pa":6.04,"pr":7.3},{"id":"EST-138","m":6,"a":"Iztapalapa","s":8,"p":"Procrastinadores","r":1,"hr":5.99,"hp":1.55,"ho":1.5,"hn":1.79,"d":152,"pa":7.09,"pr":6.38},{"id":"EST-139","m":11,"a":"Venustiano Carranza","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.31,"hp":1.66,"ho":2.77,"hn":1.85,"d":80,"pa":6.7,"pr":7.05},{"id":"EST-140","m":3,"a":"Tlalpan","s":9,"p":"Procrastinadores","r":1,"hr":5.17,"hp":2.22,"ho":3.71,"hn":3.37,"d":145,"pa":5.37,"pr":6.09},{"id":"EST-141","m":1,"a":"Gustavo A. Madero","s":5,"p":"Procrastinadores","r":1,"hr":5.34,"hp":0.32,"ho":4.39,"hn":2.35,"d":133,"pa":6.85,"pr":5.59},{"id":"EST-142","m":3,"a":"Coyoacán","s":9,"p":"Productivos","r":0,"hr":1.75,"hp":3.2,"ho":0.99,"hn":0.84,"d":59,"pa":8.02,"pr":8.57},{"id":"EST-143","m":5,"a":"Iztapalapa","s":4,"p":"Consumidores de Ocio","r":1,"hr":3.94,"hp":1.7,"ho":4.21,"hn":1.73,"d":83,"pa":7.33,"pr":6.69},{"id":"EST-144","m":3,"a":"Iztacalco","s":9,"p":"Consumidores de Ocio","r":0,"hr":3.35,"hp":2.61,"ho":3.24,"hn":0.96,"d":80,"pa":7.94,"pr":7.53},{"id":"EST-145","m":1,"a":"Gustavo A. Madero","s":5,"p":"Productivos","r":0,"hr":1.43,"hp":3.48,"ho":0.72,"hn":0.63,"d":86,"pa":8.47,"pr":8.84},{"id":"EST-147","m":5,"a":"Coyoacán","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.17,"hp":2.69,"ho":3.73,"hn":2.34,"d":102,"pa":7.28,"pr":7.14},{"id":"EST-148","m":10,"a":"Iztacalco","s":4,"p":"Consumidores de Ocio","r":0,"hr":3.44,"hp":1.89,"ho":3.14,"hn":1.18,"d":95,"pa":7.75,"pr":7.2},{"id":"EST-149","m":7,"a":"Venustiano Carranza","s":9,"p":"Productivos","r":0,"hr":1.1,"hp":4.71,"ho":1.86,"hn":0.46,"d":28,"pa":9.07,"pr":9.27},{"id":"EST-150","m":7,"a":"Venustiano Carranza","s":6,"p":"Productivos","r":0,"hr":2.25,"hp":3.78,"ho":0.7,"hn":0.35,"d":69,"pa":9.03,"pr":8.79},{"id":"EST-151","m":11,"a":"Benito Juárez","s":2,"p":"Procrastinadores","r":1,"hr":5.38,"hp":0.92,"ho":3.25,"hn":1.85,"d":176,"pa":5.85,"pr":6.05},{"id":"EST-152","m":9,"a":"Gustavo A. Madero","s":7,"p":"Productivos","r":0,"hr":2.21,"hp":5.02,"ho":1.7,"hn":0.37,"d":63,"pa":9.06,"pr":9.07},{"id":"EST-153","m":10,"a":"Iztapalapa","s":2,"p":"Productivos","r":0,"hr":1.15,"hp":4.06,"ho":0.61,"hn":0.86,"d":51,"pa":9.24,"pr":9.1},{"id":"EST-154","m":10,"a":"Cuauhtémoc","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.5,"hp":1.94,"ho":3.31,"hn":1.11,"d":107,"pa":6.62,"pr":7.18},{"id":"EST-155","m":12,"a":"Benito Juárez","s":1,"p":"Procrastinadores","r":1,"hr":5.71,"hp":2.07,"ho":2.7,"hn":1.99,"d":150,"pa":6.34,"pr":6.4},{"id":"EST-156","m":3,"a":"Iztacalco","s":3,"p":"Productivos","r":0,"hr":1.78,"hp":4.19,"ho":1.52,"hn":0.83,"d":63,"pa":8.76,"pr":8.82},{"id":"EST-157","m":7,"a":"Tlalpan","s":6,"p":"Consumidores de Ocio","r":0,"hr":3.77,"hp":3.24,"ho":2.81,"hn":0.91,"d":111,"pa":7.58,"pr":7.67},{"id":"EST-158","m":1,"a":"Cuauhtémoc","s":8,"p":"Procrastinadores","r":1,"hr":3.8,"hp":1.52,"ho":3.12,"hn":2.35,"d":145,"pa":6.71,"pr":6.62},{"id":"EST-159","m":4,"a":"Venustiano Carranza","s":9,"p":"Productivos","r":0,"hr":1.95,"hp":3.45,"ho":1.46,"hn":0.42,"d":68,"pa":8.94,"pr":8.64},{"id":"EST-160","m":4,"a":"Benito Juárez","s":7,"p":"Procrastinadores","r":1,"hr":4.76,"hp":1.64,"ho":3.12,"hn":2.88,"d":146,"pa":6.94,"pr":6.24},{"id":"EST-161","m":5,"a":"Coyoacán","s":4,"p":"Consumidores de Ocio","r":1,"hr":3.36,"hp":1.89,"ho":2.89,"hn":1.18,"d":106,"pa":6.66,"pr":7.25},{"id":"EST-162","m":7,"a":"Gustavo A. Madero","s":6,"p":"Consumidores de Ocio","r":1,"hr":2.56,"hp":1.46,"ho":3.57,"hn":1.98,"d":90,"pa":7.02,"pr":7.04},{"id":"EST-163","m":7,"a":"Venustiano Carranza","s":5,"p":"Consumidores de Ocio","r":0,"hr":3.35,"hp":2.8,"ho":2.25,"hn":1.4,"d":109,"pa":7.79,"pr":7.6},{"id":"EST-164","m":11,"a":"Tlalpan","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.43,"hp":2.7,"ho":1.2,"hn":1.57,"d":80,"pa":6.85,"pr":7.67},{"id":"EST-165","m":4,"a":"Iztacalco","s":1,"p":"Productivos","r":0,"hr":1.86,"hp":4.9,"ho":1.13,"hn":0.79,"d":80,"pa":9.67,"pr":9.09},{"id":"EST-166","m":7,"a":"Iztacalco","s":1,"p":"Procrastinadores","r":1,"hr":7.08,"hp":1.47,"ho":3.67,"hn":1.44,"d":132,"pa":5.25,"pr":5.82},{"id":"EST-167","m":11,"a":"Iztapalapa","s":6,"p":"Consumidores de Ocio","r":1,"hr":4.82,"hp":1.99,"ho":2.99,"hn":1.52,"d":92,"pa":7.37,"pr":6.76},{"id":"EST-168","m":3,"a":"Cuauhtémoc","s":2,"p":"Productivos","r":0,"hr":1.29,"hp":3.96,"ho":0.83,"hn":0.1,"d":49,"pa":9.24,"pr":9.2},{"id":"EST-169","m":6,"a":"Venustiano Carranza","s":5,"p":"Productivos","r":0,"hr":1.39,"hp":3.25,"ho":0.5,"hn":0.48,"d":36,"pa":9.26,"pr":8.88},{"id":"EST-170","m":12,"a":"Iztacalco","s":1,"p":"Consumidores de Ocio","r":0,"hr":3.36,"hp":2.22,"ho":2.68,"hn":1.0,"d":97,"pa":7.69,"pr":7.45},{"id":"EST-171","m":2,"a":"Coyoacán","s":7,"p":"Consumidores de Ocio","r":1,"hr":1.99,"hp":2.17,"ho":2.79,"hn":1.57,"d":95,"pa":7.43,"pr":7.66},{"id":"EST-172","m":10,"a":"Gustavo A. Madero","s":1,"p":"Productivos","r":0,"hr":1.44,"hp":2.22,"ho":1.74,"hn":0.51,"d":84,"pa":8.68,"pr":8.29},{"id":"EST-173","m":9,"a":"Venustiano Carranza","s":4,"p":"Consumidores de Ocio","r":0,"hr":2.8,"hp":1.19,"ho":1.64,"hn":0.67,"d":96,"pa":7.77,"pr":7.51},{"id":"EST-174","m":5,"a":"Cuauhtémoc","s":9,"p":"Productivos","r":0,"hr":0.81,"hp":4.52,"ho":0.96,"hn":0.54,"d":80,"pa":9.84,"pr":9.36},{"id":"EST-175","m":6,"a":"Cuauhtémoc","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.11,"hp":1.57,"ho":1.39,"hn":1.01,"d":88,"pa":7.09,"pr":7.5},{"id":"EST-176","m":12,"a":"Gustavo A. Madero","s":4,"p":"Productivos","r":0,"hr":1.53,"hp":3.86,"ho":1.09,"hn":0.3,"d":60,"pa":9.23,"pr":8.99},{"id":"EST-177","m":12,"a":"Gustavo A. Madero","s":6,"p":"Consumidores de Ocio","r":1,"hr":2.54,"hp":2.95,"ho":2.83,"hn":1.31,"d":104,"pa":7.33,"pr":7.82},{"id":"EST-178","m":12,"a":"Iztapalapa","s":6,"p":"Consumidores de Ocio","r":1,"hr":3.97,"hp":2.27,"ho":2.47,"hn":1.44,"d":71,"pa":7.19,"pr":7.22},{"id":"EST-179","m":12,"a":"Iztacalco","s":8,"p":"Procrastinadores","r":1,"hr":5.57,"hp":1.0,"ho":3.48,"hn":1.27,"d":124,"pa":6.11,"pr":6.18},{"id":"EST-180","m":4,"a":"Tlalpan","s":1,"p":"Productivos","r":0,"hr":1.68,"hp":2.98,"ho":1.83,"hn":0.24,"d":71,"pa":8.8,"pr":8.55},{"id":"EST-181","m":11,"a":"Cuauhtémoc","s":7,"p":"Consumidores de Ocio","r":0,"hr":2.85,"hp":3.17,"ho":2.06,"hn":1.67,"d":110,"pa":7.55,"pr":7.82},{"id":"EST-182","m":10,"a":"Venustiano Carranza","s":1,"p":"Productivos","r":0,"hr":2.3,"hp":3.6,"ho":1.34,"hn":0.58,"d":56,"pa":8.92,"pr":8.57},{"id":"EST-183","m":7,"a":"Venustiano Carranza","s":7,"p":"Procrastinadores","r":1,"hr":6.31,"hp":0.23,"ho":4.77,"hn":1.4,"d":162,"pa":5.81,"pr":5.45},{"id":"EST-184","m":12,"a":"Coyoacán","s":3,"p":"Procrastinadores","r":1,"hr":4.62,"hp":0.89,"ho":2.6,"hn":2.27,"d":130,"pa":6.55,"pr":6.28},{"id":"EST-185","m":9,"a":"Benito Juárez","s":8,"p":"Productivos","r":0,"hr":2.26,"hp":4.92,"ho":0.92,"hn":0.44,"d":34,"pa":8.77,"pr":9.14},{"id":"EST-186","m":7,"a":"Venustiano Carranza","s":3,"p":"Consumidores de Ocio","r":0,"hr":3.98,"hp":2.22,"ho":2.04,"hn":1.06,"d":91,"pa":7.69,"pr":7.35},{"id":"EST-187","m":1,"a":"Cuauhtémoc","s":1,"p":"Procrastinadores","r":1,"hr":4.87,"hp":1.31,"ho":3.17,"hn":2.39,"d":151,"pa":6.15,"pr":6.21},{"id":"EST-188","m":1,"a":"Iztapalapa","s":8,"p":"Consumidores de Ocio","r":0,"hr":2.99,"hp":2.03,"ho":2.84,"hn":1.15,"d":87,"pa":8.12,"pr":7.44},{"id":"EST-189","m":9,"a":"Gustavo A. Madero","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.69,"hp":1.92,"ho":3.39,"hn":1.17,"d":113,"pa":7.24,"pr":7.09},{"id":"EST-190","m":11,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":1.55,"hp":4.16,"ho":0.41,"hn":0.16,"d":41,"pa":9.33,"pr":9.24},{"id":"EST-191","m":9,"a":"Venustiano Carranza","s":1,"p":"Productivos","r":0,"hr":2.47,"hp":5.59,"ho":1.52,"hn":0.65,"d":32,"pa":8.88,"pr":9.16},{"id":"EST-192","m":4,"a":"Coyoacán","s":3,"p":"Procrastinadores","r":1,"hr":4.89,"hp":0.79,"ho":3.45,"hn":2.12,"d":90,"pa":6.33,"pr":6.11},{"id":"EST-193","m":9,"a":"Iztapalapa","s":2,"p":"Procrastinadores","r":1,"hr":4.63,"hp":1.22,"ho":5.47,"hn":1.85,"d":85,"pa":5.92,"pr":6.11},{"id":"EST-194","m":3,"a":"Coyoacán","s":2,"p":"Consumidores de Ocio","r":1,"hr":4.07,"hp":3.28,"ho":2.04,"hn":1.5,"d":83,"pa":7.43,"pr":7.57},{"id":"EST-195","m":7,"a":"Coyoacán","s":6,"p":"Consumidores de Ocio","r":1,"hr":5.15,"hp":1.2,"ho":3.08,"hn":1.49,"d":111,"pa":6.32,"pr":6.38},{"id":"EST-196","m":6,"a":"Iztapalapa","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.52,"hp":1.87,"ho":3.09,"hn":1.16,"d":103,"pa":7.02,"pr":7.18},{"id":"EST-197","m":8,"a":"Iztacalco","s":2,"p":"Procrastinadores","r":1,"hr":5.94,"hp":1.09,"ho":4.61,"hn":2.37,"d":95,"pa":6.03,"pr":5.66},{"id":"EST-198","m":11,"a":"Coyoacán","s":6,"p":"Procrastinadores","r":1,"hr":3.36,"hp":0.77,"ho":3.06,"hn":3.22,"d":86,"pa":7.11,"pr":6.31},{"id":"EST-199","m":9,"a":"Gustavo A. Madero","s":3,"p":"Procrastinadores","r":1,"hr":6.55,"hp":1.21,"ho":3.55,"hn":2.57,"d":150,"pa":5.68,"pr":5.59},{"id":"EST-200","m":5,"a":"Benito Juárez","s":4,"p":"Procrastinadores","r":1,"hr":6.1,"hp":1.14,"ho":3.42,"hn":2.31,"d":133,"pa":6.12,"pr":5.8},{"id":"EST-201","m":1,"a":"Gustavo A. Madero","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.72,"hp":0.8,"ho":3.36,"hn":1.38,"d":91,"pa":6.5,"pr":6.67},{"id":"EST-202","m":3,"a":"Cuauhtémoc","s":8,"p":"Productivos","r":0,"hr":2.16,"hp":4.56,"ho":0.81,"hn":0.62,"d":44,"pa":8.41,"pr":9.01},{"id":"EST-203","m":10,"a":"Coyoacán","s":7,"p":"Productivos","r":0,"hr":1.29,"hp":4.49,"ho":1.68,"hn":0.65,"d":68,"pa":9.37,"pr":9.09},{"id":"EST-204","m":12,"a":"Coyoacán","s":7,"p":"Procrastinadores","r":1,"hr":5.02,"hp":1.32,"ho":4.32,"hn":2.85,"d":166,"pa":6.11,"pr":5.87},{"id":"EST-205","m":8,"a":"Tlalpan","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.55,"hp":2.74,"ho":2.88,"hn":0.95,"d":89,"pa":7.22,"pr":7.56},{"id":"EST-206","m":11,"a":"Gustavo A. Madero","s":3,"p":"Productivos","r":0,"hr":1.26,"hp":3.68,"ho":0.8,"hn":0.41,"d":31,"pa":9.19,"pr":9.04},{"id":"EST-207","m":6,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":1.6,"hp":3.15,"ho":1.53,"hn":0.78,"d":35,"pa":8.28,"pr":8.55},{"id":"EST-208","m":8,"a":"Iztacalco","s":1,"p":"Consumidores de Ocio","r":1,"hr":2.76,"hp":1.54,"ho":3.48,"hn":1.22,"d":87,"pa":6.43,"pr":7.23},{"id":"EST-209","m":9,"a":"Benito Juárez","s":7,"p":"Productivos","r":0,"hr":1.92,"hp":2.81,"ho":1.23,"hn":0.58,"d":77,"pa":7.92,"pr":8.41},{"id":"EST-210","m":4,"a":"Coyoacán","s":7,"p":"Productivos","r":0,"hr":0.3,"hp":3.95,"ho":2.1,"hn":0.87,"d":60,"pa":9.01,"pr":9.08},{"id":"EST-211","m":1,"a":"Benito Juárez","s":2,"p":"Consumidores de Ocio","r":0,"hr":3.86,"hp":1.52,"ho":3.23,"hn":1.5,"d":111,"pa":7.98,"pr":6.84},{"id":"EST-212","m":1,"a":"Iztapalapa","s":7,"p":"Consumidores de Ocio","r":1,"hr":3.57,"hp":1.79,"ho":2.88,"hn":0.59,"d":79,"pa":7.15,"pr":7.34},{"id":"EST-213","m":10,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":1,"hr":2.93,"hp":2.19,"ho":2.32,"hn":1.75,"d":92,"pa":7.43,"pr":7.42},{"id":"EST-214","m":4,"a":"Iztacalco","s":1,"p":"Productivos","r":0,"hr":1.44,"hp":3.92,"ho":1.61,"hn":0.24,"d":48,"pa":8.92,"pr":8.99},{"id":"EST-215","m":12,"a":"Iztapalapa","s":9,"p":"Procrastinadores","r":1,"hr":4.39,"hp":0.69,"ho":3.17,"hn":2.92,"d":144,"pa":6.06,"pr":6.01},{"id":"EST-216","m":7,"a":"Coyoacán","s":7,"p":"Productivos","r":0,"hr":2.03,"hp":3.69,"ho":1.4,"hn":0.47,"d":61,"pa":8.48,"pr":8.69},{"id":"EST-217","m":2,"a":"Gustavo A. Madero","s":3,"p":"Consumidores de Ocio","r":0,"hr":1.8,"hp":2.02,"ho":3.9,"hn":1.67,"d":109,"pa":8.1,"pr":7.47},{"id":"EST-218","m":3,"a":"Gustavo A. Madero","s":8,"p":"Procrastinadores","r":1,"hr":5.68,"hp":1.2,"ho":3.04,"hn":2.21,"d":152,"pa":6.4,"pr":6.01},{"id":"EST-219","m":1,"a":"Tlalpan","s":7,"p":"Consumidores de Ocio","r":1,"hr":3.2,"hp":1.83,"ho":2.9,"hn":1.54,"d":66,"pa":6.23,"pr":7.21},{"id":"EST-220","m":5,"a":"Iztapalapa","s":8,"p":"Procrastinadores","r":1,"hr":5.1,"hp":0.49,"ho":3.14,"hn":2.31,"d":127,"pa":6.44,"pr":5.91},{"id":"EST-221","m":1,"a":"Gustavo A. Madero","s":6,"p":"Consumidores de Ocio","r":1,"hr":3.53,"hp":2.28,"ho":3.34,"hn":0.84,"d":110,"pa":7.32,"pr":7.36},{"id":"EST-222","m":8,"a":"Cuauhtémoc","s":9,"p":"Consumidores de Ocio","r":1,"hr":3.77,"hp":1.46,"ho":1.81,"hn":1.63,"d":98,"pa":6.62,"pr":7.03},{"id":"EST-223","m":1,"a":"Gustavo A. Madero","s":5,"p":"Productivos","r":0,"hr":1.17,"hp":4.7,"ho":0.61,"hn":0.99,"d":45,"pa":9.59,"pr":9.28},{"id":"EST-224","m":11,"a":"Coyoacán","s":3,"p":"Consumidores de Ocio","r":1,"hr":3.07,"hp":2.46,"ho":2.52,"hn":1.23,"d":92,"pa":7.16,"pr":7.58},{"id":"EST-225","m":1,"a":"Tlalpan","s":3,"p":"Productivos","r":0,"hr":1.97,"hp":3.39,"ho":1.09,"hn":0.2,"d":25,"pa":8.69,"pr":8.76},{"id":"EST-226","m":2,"a":"Venustiano Carranza","s":1,"p":"Productivos","r":0,"hr":2.81,"hp":4.43,"ho":1.19,"hn":0.42,"d":58,"pa":8.95,"pr":8.76},{"id":"EST-227","m":2,"a":"Iztacalco","s":8,"p":"Procrastinadores","r":1,"hr":4.54,"hp":1.66,"ho":4.24,"hn":2.83,"d":148,"pa":6.12,"pr":6.15},{"id":"EST-228","m":12,"a":"Tlalpan","s":2,"p":"Consumidores de Ocio","r":0,"hr":3.77,"hp":2.46,"ho":2.65,"hn":1.07,"d":93,"pa":8.01,"pr":7.4},{"id":"EST-229","m":6,"a":"Gustavo A. Madero","s":3,"p":"Procrastinadores","r":1,"hr":4.48,"hp":0.37,"ho":3.75,"hn":2.43,"d":142,"pa":6.0,"pr":5.92},{"id":"EST-230","m":7,"a":"Iztapalapa","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.14,"hp":2.99,"ho":1.78,"hn":0.97,"d":90,"pa":7.22,"pr":7.92},{"id":"EST-232","m":5,"a":"Venustiano Carranza","s":4,"p":"Consumidores de Ocio","r":1,"hr":3.04,"hp":1.91,"ho":3.8,"hn":1.52,"d":71,"pa":7.26,"pr":7.15},{"id":"EST-233","m":1,"a":"Gustavo A. Madero","s":4,"p":"Consumidores de Ocio","r":1,"hr":3.65,"hp":2.78,"ho":4.01,"hn":0.89,"d":77,"pa":6.84,"pr":7.4},{"id":"EST-234","m":1,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.14,"hp":2.38,"ho":3.59,"hn":1.27,"d":86,"pa":7.44,"pr":7.37},{"id":"EST-235","m":3,"a":"Coyoacán","s":6,"p":"Productivos","r":0,"hr":1.18,"hp":5.47,"ho":0.4,"hn":0.56,"d":86,"pa":9.72,"pr":9.65},{"id":"EST-236","m":2,"a":"Iztapalapa","s":5,"p":"Procrastinadores","r":1,"hr":5.43,"hp":0.92,"ho":3.44,"hn":3.22,"d":85,"pa":6.2,"pr":5.7},{"id":"EST-237","m":5,"a":"Iztacalco","s":7,"p":"Productivos","r":0,"hr":0.89,"hp":3.59,"ho":0.99,"hn":0.68,"d":35,"pa":9.29,"pr":9.02},{"id":"EST-238","m":12,"a":"Iztacalco","s":2,"p":"Productivos","r":0,"hr":2.61,"hp":2.71,"ho":1.29,"hn":0.3,"d":63,"pa":8.27,"pr":8.26},{"id":"EST-239","m":10,"a":"Iztacalco","s":7,"p":"Consumidores de Ocio","r":1,"hr":2.85,"hp":2.39,"ho":4.16,"hn":1.22,"d":104,"pa":6.87,"pr":7.37},{"id":"EST-240","m":6,"a":"Iztacalco","s":7,"p":"Productivos","r":0,"hr":1.12,"hp":4.18,"ho":1.94,"hn":0.61,"d":53,"pa":9.09,"pr":9.01},{"id":"EST-241","m":7,"a":"Iztacalco","s":1,"p":"Procrastinadores","r":1,"hr":4.47,"hp":1.4,"ho":4.39,"hn":2.13,"d":126,"pa":6.34,"pr":6.27},{"id":"EST-242","m":4,"a":"Coyoacán","s":7,"p":"Procrastinadores","r":1,"hr":5.21,"hp":1.07,"ho":5.49,"hn":2.25,"d":129,"pa":5.4,"pr":5.74},{"id":"EST-243","m":7,"a":"Iztacalco","s":5,"p":"Procrastinadores","r":1,"hr":3.36,"hp":1.01,"ho":3.02,"hn":3.19,"d":172,"pa":5.2,"pr":6.34},{"id":"EST-244","m":11,"a":"Iztapalapa","s":3,"p":"Consumidores de Ocio","r":0,"hr":1.99,"hp":2.7,"ho":2.42,"hn":1.62,"d":56,"pa":8.33,"pr":7.91},{"id":"EST-245","m":8,"a":"Tlalpan","s":3,"p":"Productivos","r":0,"hr":0.99,"hp":4.38,"ho":1.21,"hn":0.21,"d":52,"pa":9.7,"pr":9.34},{"id":"EST-246","m":11,"a":"Gustavo A. Madero","s":4,"p":"Procrastinadores","r":1,"hr":5.7,"hp":1.39,"ho":5.38,"hn":1.46,"d":176,"pa":5.88,"pr":5.9},{"id":"EST-247","m":1,"a":"Coyoacán","s":2,"p":"Consumidores de Ocio","r":0,"hr":2.67,"hp":1.3,"ho":2.77,"hn":1.67,"d":89,"pa":7.84,"pr":7.15},{"id":"EST-248","m":6,"a":"Iztacalco","s":2,"p":"Procrastinadores","r":1,"hr":4.29,"hp":1.09,"ho":2.47,"hn":2.62,"d":159,"pa":6.15,"pr":6.34},{"id":"EST-249","m":8,"a":"Iztacalco","s":1,"p":"Procrastinadores","r":1,"hr":3.8,"hp":1.2,"ho":3.99,"hn":2.64,"d":167,"pa":5.87,"pr":6.29},{"id":"EST-250","m":5,"a":"Iztacalco","s":5,"p":"Procrastinadores","r":1,"hr":6.21,"hp":1.7,"ho":2.0,"hn":2.59,"d":125,"pa":5.87,"pr":6.09},{"id":"EST-251","m":4,"a":"Iztacalco","s":4,"p":"Productivos","r":0,"hr":1.77,"hp":3.41,"ho":0.86,"hn":0.51,"d":42,"pa":8.33,"pr":8.76},{"id":"EST-252","m":2,"a":"Iztapalapa","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.78,"hp":1.41,"ho":3.37,"hn":1.49,"d":60,"pa":6.52,"pr":6.85},{"id":"EST-253","m":6,"a":"Iztacalco","s":3,"p":"Procrastinadores","r":1,"hr":6.67,"hp":0.61,"ho":3.18,"hn":2.68,"d":156,"pa":5.2,"pr":5.37},{"id":"EST-254","m":6,"a":"Iztacalco","s":7,"p":"Consumidores de Ocio","r":1,"hr":2.88,"hp":2.95,"ho":4.12,"hn":1.69,"d":93,"pa":7.12,"pr":7.44},{"id":"EST-255","m":11,"a":"Iztacalco","s":7,"p":"Productivos","r":0,"hr":1.18,"hp":4.22,"ho":1.41,"hn":0.92,"d":67,"pa":8.44,"pr":8.99},{"id":"EST-256","m":1,"a":"Gustavo A. Madero","s":4,"p":"Consumidores de Ocio","r":0,"hr":4.04,"hp":1.5,"ho":2.63,"hn":1.4,"d":127,"pa":8.17,"pr":6.88},{"id":"EST-257","m":9,"a":"Iztapalapa","s":5,"p":"Procrastinadores","r":1,"hr":6.15,"hp":1.01,"ho":4.08,"hn":2.93,"d":130,"pa":6.07,"pr":5.47},{"id":"EST-258","m":12,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.46,"hp":2.4,"ho":3.37,"hn":1.47,"d":107,"pa":6.98,"pr":7.25},{"id":"EST-259","m":11,"a":"Gustavo A. Madero","s":6,"p":"Consumidores de Ocio","r":0,"hr":2.91,"hp":1.44,"ho":3.21,"hn":1.61,"d":100,"pa":7.82,"pr":7.07},{"id":"EST-260","m":6,"a":"Benito Juárez","s":9,"p":"Productivos","r":0,"hr":1.6,"hp":4.33,"ho":0.65,"hn":0.38,"d":67,"pa":9.57,"pr":9.17},{"id":"EST-261","m":3,"a":"Iztacalco","s":2,"p":"Consumidores de Ocio","r":0,"hr":3.09,"hp":2.06,"ho":1.84,"hn":1.16,"d":108,"pa":7.8,"pr":7.55},{"id":"EST-262","m":4,"a":"Cuauhtémoc","s":5,"p":"Procrastinadores","r":1,"hr":6.05,"hp":1.12,"ho":3.61,"hn":2.0,"d":154,"pa":5.89,"pr":5.84},{"id":"EST-263","m":12,"a":"Coyoacán","s":3,"p":"Productivos","r":0,"hr":3.36,"hp":3.38,"ho":0.2,"hn":0.83,"d":51,"pa":8.39,"pr":8.29},{"id":"EST-264","m":11,"a":"Iztacalco","s":4,"p":"Consumidores de Ocio","r":1,"hr":3.79,"hp":1.86,"ho":3.64,"hn":1.55,"d":104,"pa":6.32,"pr":6.91},{"id":"EST-265","m":4,"a":"Tlalpan","s":6,"p":"Procrastinadores","r":1,"hr":6.69,"hp":1.23,"ho":3.27,"hn":2.49,"d":95,"pa":5.6,"pr":5.66},{"id":"EST-266","m":3,"a":"Tlalpan","s":8,"p":"Procrastinadores","r":1,"hr":4.67,"hp":0.42,"ho":2.23,"hn":3.07,"d":122,"pa":6.53,"pr":5.95},{"id":"EST-267","m":10,"a":"Iztacalco","s":1,"p":"Consumidores de Ocio","r":1,"hr":2.92,"hp":1.08,"ho":2.12,"hn":1.79,"d":89,"pa":6.86,"pr":7.07},{"id":"EST-268","m":3,"a":"Iztapalapa","s":8,"p":"Procrastinadores","r":1,"hr":5.74,"hp":1.35,"ho":4.61,"hn":3.27,"d":129,"pa":5.2,"pr":5.54},{"id":"EST-269","m":3,"a":"Cuauhtémoc","s":7,"p":"Consumidores de Ocio","r":0,"hr":3.01,"hp":2.26,"ho":2.23,"hn":0.92,"d":98,"pa":7.65,"pr":7.65},{"id":"EST-270","m":4,"a":"Benito Juárez","s":1,"p":"Productivos","r":0,"hr":1.62,"hp":3.19,"ho":1.08,"hn":0.22,"d":70,"pa":9.26,"pr":8.75},{"id":"EST-271","m":7,"a":"Iztacalco","s":2,"p":"Procrastinadores","r":1,"hr":3.94,"hp":0.64,"ho":2.25,"hn":2.01,"d":135,"pa":5.9,"pr":6.51},{"id":"EST-272","m":4,"a":"Iztapalapa","s":3,"p":"Procrastinadores","r":1,"hr":4.77,"hp":0.6,"ho":3.79,"hn":2.44,"d":120,"pa":5.93,"pr":5.92},{"id":"EST-273","m":9,"a":"Iztapalapa","s":1,"p":"Procrastinadores","r":1,"hr":5.11,"hp":0.96,"ho":5.11,"hn":3.2,"d":106,"pa":5.81,"pr":5.55},{"id":"EST-274","m":1,"a":"Gustavo A. Madero","s":9,"p":"Procrastinadores","r":1,"hr":6.33,"hp":0.53,"ho":4.34,"hn":3.32,"d":111,"pa":5.2,"pr":5.13},{"id":"EST-275","m":8,"a":"Coyoacán","s":8,"p":"Consumidores de Ocio","r":1,"hr":4.01,"hp":2.26,"ho":3.29,"hn":1.44,"d":99,"pa":6.46,"pr":7.06},{"id":"EST-276","m":7,"a":"Iztapalapa","s":2,"p":"Consumidores de Ocio","r":0,"hr":4.03,"hp":2.8,"ho":2.74,"hn":1.28,"d":64,"pa":7.52,"pr":7.39},{"id":"EST-277","m":2,"a":"Gustavo A. Madero","s":9,"p":"Procrastinadores","r":1,"hr":6.11,"hp":1.07,"ho":4.61,"hn":2.2,"d":151,"pa":5.2,"pr":5.61},{"id":"EST-278","m":8,"a":"Benito Juárez","s":7,"p":"Consumidores de Ocio","r":0,"hr":3.28,"hp":2.0,"ho":3.06,"hn":1.15,"d":89,"pa":7.65,"pr":7.31},{"id":"EST-279","m":1,"a":"Iztacalco","s":9,"p":"Procrastinadores","r":1,"hr":5.21,"hp":0.3,"ho":5.17,"hn":3.23,"d":106,"pa":5.48,"pr":5.28},{"id":"EST-280","m":11,"a":"Iztapalapa","s":6,"p":"Procrastinadores","r":1,"hr":5.15,"hp":1.23,"ho":3.86,"hn":2.26,"d":119,"pa":5.68,"pr":6.06},{"id":"EST-281","m":12,"a":"Benito Juárez","s":6,"p":"Procrastinadores","r":1,"hr":4.78,"hp":0.68,"ho":3.54,"hn":1.97,"d":154,"pa":6.68,"pr":6.08},{"id":"EST-282","m":9,"a":"Tlalpan","s":4,"p":"Consumidores de Ocio","r":0,"hr":2.89,"hp":2.24,"ho":3.25,"hn":1.49,"d":93,"pa":7.72,"pr":7.38},{"id":"EST-283","m":9,"a":"Gustavo A. Madero","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.64,"hp":1.36,"ho":3.51,"hn":1.65,"d":78,"pa":6.79,"pr":6.79},{"id":"EST-284","m":2,"a":"Gustavo A. Madero","s":7,"p":"Productivos","r":0,"hr":1.94,"hp":3.63,"ho":1.74,"hn":1.21,"d":46,"pa":7.9,"pr":8.46},{"id":"EST-285","m":7,"a":"Iztacalco","s":5,"p":"Consumidores de Ocio","r":0,"hr":3.51,"hp":2.53,"ho":2.74,"hn":1.88,"d":67,"pa":7.53,"pr":7.29},{"id":"EST-286","m":10,"a":"Gustavo A. Madero","s":6,"p":"Productivos","r":0,"hr":1.3,"hp":5.18,"ho":2.2,"hn":0.27,"d":50,"pa":9.77,"pr":9.36},{"id":"EST-287","m":3,"a":"Gustavo A. Madero","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.03,"hp":2.07,"ho":2.92,"hn":0.53,"d":91,"pa":7.33,"pr":7.59},{"id":"EST-288","m":7,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":0,"hr":2.95,"hp":2.97,"ho":2.02,"hn":1.63,"d":86,"pa":7.63,"pr":7.76},{"id":"EST-289","m":12,"a":"Iztapalapa","s":4,"p":"Productivos","r":0,"hr":2.0,"hp":4.07,"ho":1.49,"hn":0.79,"d":53,"pa":8.5,"pr":8.74},{"id":"EST-290","m":10,"a":"Iztapalapa","s":9,"p":"Consumidores de Ocio","r":1,"hr":2.54,"hp":1.6,"ho":4.96,"hn":1.8,"d":67,"pa":6.45,"pr":6.95},{"id":"EST-291","m":9,"a":"Iztacalco","s":6,"p":"Productivos","r":0,"hr":3.36,"hp":4.24,"ho":1.47,"hn":0.42,"d":56,"pa":9.11,"pr":8.5},{"id":"EST-292","m":4,"a":"Iztapalapa","s":2,"p":"Productivos","r":0,"hr":1.64,"hp":2.02,"ho":1.09,"hn":0.24,"d":60,"pa":9.69,"pr":8.35},{"id":"EST-293","m":12,"a":"Iztapalapa","s":1,"p":"Procrastinadores","r":1,"hr":5.93,"hp":0.94,"ho":4.43,"hn":2.69,"d":148,"pa":5.65,"pr":5.51},{"id":"EST-294","m":1,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":1,"hr":4.74,"hp":1.42,"ho":3.23,"hn":0.93,"d":101,"pa":6.25,"pr":6.71},{"id":"EST-295","m":2,"a":"Iztacalco","s":9,"p":"Productivos","r":0,"hr":1.39,"hp":3.56,"ho":1.69,"hn":0.78,"d":40,"pa":8.81,"pr":8.73},{"id":"EST-296","m":1,"a":"Tlalpan","s":6,"p":"Consumidores de Ocio","r":1,"hr":2.8,"hp":1.34,"ho":2.75,"hn":1.18,"d":135,"pa":7.49,"pr":7.23},{"id":"EST-297","m":12,"a":"Coyoacán","s":7,"p":"Procrastinadores","r":1,"hr":4.36,"hp":0.82,"ho":4.52,"hn":3.65,"d":99,"pa":5.2,"pr":5.7},{"id":"EST-298","m":5,"a":"Coyoacán","s":5,"p":"Productivos","r":0,"hr":2.54,"hp":4.11,"ho":0.77,"hn":0.66,"d":25,"pa":8.71,"pr":8.76},{"id":"EST-299","m":5,"a":"Cuauhtémoc","s":6,"p":"Consumidores de Ocio","r":0,"hr":3.53,"hp":2.65,"ho":2.19,"hn":1.33,"d":75,"pa":7.61,"pr":7.55},{"id":"EST-300","m":11,"a":"Gustavo A. Madero","s":5,"p":"Productivos","r":0,"hr":1.15,"hp":3.47,"ho":0.7,"hn":0.7,"d":70,"pa":8.91,"pr":8.91},{"id":"EST-301","m":7,"a":"Iztacalco","s":9,"p":"Productivos","r":0,"hr":1.62,"hp":2.64,"ho":1.05,"hn":0.48,"d":94,"pa":8.11,"pr":8.48},{"id":"EST-302","m":9,"a":"Gustavo A. Madero","s":6,"p":"Consumidores de Ocio","r":1,"hr":4.32,"hp":2.7,"ho":3.1,"hn":2.0,"d":98,"pa":7.08,"pr":7.0},{"id":"EST-303","m":9,"a":"Coyoacán","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.26,"hp":2.83,"ho":3.67,"hn":1.05,"d":68,"pa":7.44,"pr":7.55},{"id":"EST-304","m":3,"a":"Benito Juárez","s":2,"p":"Consumidores de Ocio","r":1,"hr":2.74,"hp":2.06,"ho":3.77,"hn":1.12,"d":91,"pa":7.46,"pr":7.39},{"id":"EST-305","m":3,"a":"Gustavo A. Madero","s":9,"p":"Procrastinadores","r":1,"hr":6.36,"hp":0.2,"ho":3.05,"hn":2.53,"d":166,"pa":5.2,"pr":5.37},{"id":"EST-306","m":3,"a":"Iztacalco","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.91,"hp":1.41,"ho":3.03,"hn":1.69,"d":123,"pa":6.67,"pr":6.76},{"id":"EST-307","m":4,"a":"Iztapalapa","s":7,"p":"Consumidores de Ocio","r":1,"hr":2.88,"hp":0.8,"ho":3.53,"hn":1.81,"d":103,"pa":6.34,"pr":6.76},{"id":"EST-308","m":8,"a":"Iztapalapa","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.16,"hp":2.1,"ho":3.32,"hn":1.57,"d":78,"pa":7.26,"pr":7.23},{"id":"EST-309","m":6,"a":"Coyoacán","s":5,"p":"Procrastinadores","r":1,"hr":6.01,"hp":1.83,"ho":4.23,"hn":2.87,"d":140,"pa":6.22,"pr":5.78},{"id":"EST-310","m":8,"a":"Coyoacán","s":2,"p":"Productivos","r":0,"hr":1.8,"hp":3.11,"ho":1.9,"hn":0.71,"d":51,"pa":8.28,"pr":8.43},{"id":"EST-311","m":1,"a":"Iztapalapa","s":6,"p":"Consumidores de Ocio","r":0,"hr":3.51,"hp":2.38,"ho":3.04,"hn":1.42,"d":122,"pa":7.72,"pr":7.27},{"id":"EST-312","m":8,"a":"Venustiano Carranza","s":1,"p":"Productivos","r":0,"hr":1.7,"hp":4.55,"ho":0.68,"hn":0.62,"d":83,"pa":9.09,"pr":9.13},{"id":"EST-313","m":4,"a":"Coyoacán","s":3,"p":"Productivos","r":0,"hr":1.18,"hp":3.28,"ho":0.66,"hn":0.26,"d":52,"pa":8.47,"pr":8.98},{"id":"EST-314","m":11,"a":"Iztapalapa","s":5,"p":"Procrastinadores","r":1,"hr":5.61,"hp":1.55,"ho":2.78,"hn":3.31,"d":150,"pa":6.19,"pr":5.89},{"id":"EST-315","m":1,"a":"Iztacalco","s":4,"p":"Procrastinadores","r":1,"hr":5.01,"hp":1.53,"ho":2.62,"hn":2.93,"d":142,"pa":6.33,"pr":6.19},{"id":"EST-316","m":8,"a":"Iztacalco","s":3,"p":"Consumidores de Ocio","r":1,"hr":2.48,"hp":1.56,"ho":3.32,"hn":0.92,"d":100,"pa":6.91,"pr":7.41},{"id":"EST-317","m":4,"a":"Iztapalapa","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.89,"hp":1.36,"ho":3.29,"hn":1.55,"d":79,"pa":6.98,"pr":6.78},{"id":"EST-318","m":6,"a":"Iztacalco","s":8,"p":"Productivos","r":0,"hr":1.73,"hp":3.37,"ho":0.7,"hn":0.0,"d":62,"pa":8.3,"pr":8.9},{"id":"EST-319","m":8,"a":"Iztacalco","s":4,"p":"Productivos","r":1,"hr":1.65,"hp":3.59,"ho":1.54,"hn":0.41,"d":53,"pa":7.33,"pr":8.77},{"id":"EST-320","m":4,"a":"Iztapalapa","s":1,"p":"Productivos","r":0,"hr":1.77,"hp":4.05,"ho":1.43,"hn":0.04,"d":68,"pa":9.31,"pr":9.0},{"id":"EST-321","m":3,"a":"Iztacalco","s":7,"p":"Consumidores de Ocio","r":0,"hr":2.59,"hp":1.95,"ho":2.87,"hn":1.25,"d":98,"pa":8.14,"pr":7.49},{"id":"EST-322","m":9,"a":"Tlalpan","s":8,"p":"Procrastinadores","r":1,"hr":6.57,"hp":0.44,"ho":4.16,"hn":3.2,"d":147,"pa":5.36,"pr":5.06},{"id":"EST-323","m":3,"a":"Iztacalco","s":3,"p":"Consumidores de Ocio","r":1,"hr":4.71,"hp":2.71,"ho":3.07,"hn":1.72,"d":94,"pa":6.87,"pr":6.97},{"id":"EST-324","m":9,"a":"Gustavo A. Madero","s":6,"p":"Productivos","r":0,"hr":1.42,"hp":5.05,"ho":0.79,"hn":0.96,"d":64,"pa":8.74,"pr":9.29},{"id":"EST-325","m":2,"a":"Gustavo A. Madero","s":2,"p":"Procrastinadores","r":1,"hr":5.93,"hp":0.2,"ho":4.16,"hn":2.93,"d":123,"pa":5.2,"pr":5.26},{"id":"EST-326","m":2,"a":"Venustiano Carranza","s":7,"p":"Procrastinadores","r":1,"hr":7.36,"hp":0.85,"ho":2.65,"hn":3.29,"d":185,"pa":5.2,"pr":5.14},{"id":"EST-327","m":2,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":0,"hr":4.01,"hp":2.9,"ho":2.38,"hn":1.11,"d":114,"pa":8.15,"pr":7.49},{"id":"EST-328","m":6,"a":"Gustavo A. Madero","s":6,"p":"Consumidores de Ocio","r":1,"hr":3.69,"hp":1.57,"ho":4.29,"hn":1.09,"d":85,"pa":7.01,"pr":6.88},{"id":"EST-329","m":3,"a":"Venustiano Carranza","s":6,"p":"Consumidores de Ocio","r":1,"hr":4.39,"hp":2.61,"ho":3.19,"hn":1.49,"d":92,"pa":7.23,"pr":7.08},{"id":"EST-330","m":9,"a":"Tlalpan","s":5,"p":"Productivos","r":1,"hr":0.34,"hp":3.56,"ho":1.32,"hn":0.15,"d":63,"pa":7.33,"pr":9.24},{"id":"EST-331","m":4,"a":"Cuauhtémoc","s":8,"p":"Consumidores de Ocio","r":1,"hr":4.53,"hp":3.04,"ho":2.57,"hn":1.24,"d":90,"pa":7.05,"pr":7.34},{"id":"EST-332","m":1,"a":"Iztapalapa","s":1,"p":"Procrastinadores","r":1,"hr":5.78,"hp":0.72,"ho":2.58,"hn":2.77,"d":153,"pa":5.28,"pr":5.73},{"id":"EST-333","m":4,"a":"Iztacalco","s":4,"p":"Productivos","r":0,"hr":2.05,"hp":3.29,"ho":1.33,"hn":0.75,"d":57,"pa":8.71,"pr":8.49},{"id":"EST-334","m":1,"a":"Coyoacán","s":4,"p":"Productivos","r":0,"hr":1.34,"hp":3.64,"ho":1.1,"hn":0.28,"d":55,"pa":8.4,"pr":8.98},{"id":"EST-335","m":5,"a":"Tlalpan","s":3,"p":"Productivos","r":0,"hr":1.35,"hp":3.57,"ho":1.07,"hn":0.43,"d":57,"pa":9.19,"pr":8.92},{"id":"EST-336","m":4,"a":"Coyoacán","s":3,"p":"Productivos","r":0,"hr":2.04,"hp":3.28,"ho":0.6,"hn":0.19,"d":51,"pa":8.63,"pr":8.75},{"id":"EST-337","m":8,"a":"Coyoacán","s":4,"p":"Procrastinadores","r":1,"hr":4.91,"hp":0.45,"ho":3.19,"hn":2.51,"d":152,"pa":5.59,"pr":5.87},{"id":"EST-338","m":8,"a":"Iztapalapa","s":1,"p":"Procrastinadores","r":1,"hr":5.23,"hp":0.64,"ho":3.57,"hn":1.89,"d":151,"pa":5.2,"pr":5.96},{"id":"EST-339","m":7,"a":"Benito Juárez","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.05,"hp":2.28,"ho":3.03,"hn":2.38,"d":98,"pa":6.72,"pr":7.14},{"id":"EST-340","m":3,"a":"Iztacalco","s":9,"p":"Productivos","r":0,"hr":1.55,"hp":2.38,"ho":1.16,"hn":0.25,"d":70,"pa":8.34,"pr":8.48},{"id":"EST-341","m":1,"a":"Iztapalapa","s":2,"p":"Consumidores de Ocio","r":1,"hr":3.22,"hp":1.72,"ho":4.12,"hn":1.17,"d":124,"pa":7.43,"pr":7.04},{"id":"EST-342","m":1,"a":"Gustavo A. Madero","s":5,"p":"Consumidores de Ocio","r":1,"hr":3.64,"hp":2.32,"ho":3.18,"hn":0.53,"d":86,"pa":7.33,"pr":7.46},{"id":"EST-343","m":12,"a":"Gustavo A. Madero","s":9,"p":"Productivos","r":0,"hr":1.58,"hp":2.68,"ho":1.17,"hn":1.01,"d":75,"pa":8.42,"pr":8.36},{"id":"EST-344","m":11,"a":"Iztapalapa","s":9,"p":"Consumidores de Ocio","r":1,"hr":3.97,"hp":1.88,"ho":1.71,"hn":0.93,"d":120,"pa":7.16,"pr":7.3},{"id":"EST-345","m":3,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.13,"hp":1.92,"ho":4.23,"hn":1.95,"d":131,"pa":6.88,"pr":6.9},{"id":"EST-346","m":6,"a":"Coyoacán","s":1,"p":"Consumidores de Ocio","r":1,"hr":3.51,"hp":1.19,"ho":3.93,"hn":0.83,"d":95,"pa":6.47,"pr":6.92},{"id":"EST-347","m":7,"a":"Iztapalapa","s":1,"p":"Consumidores de Ocio","r":0,"hr":2.89,"hp":1.6,"ho":2.47,"hn":1.08,"d":82,"pa":7.77,"pr":7.4},{"id":"EST-348","m":6,"a":"Coyoacán","s":9,"p":"Productivos","r":0,"hr":1.05,"hp":3.98,"ho":1.81,"hn":0.35,"d":47,"pa":9.05,"pr":9.06},{"id":"EST-349","m":6,"a":"Iztacalco","s":8,"p":"Consumidores de Ocio","r":1,"hr":3.36,"hp":2.22,"ho":2.53,"hn":1.49,"d":72,"pa":7.34,"pr":7.36},{"id":"EST-350","m":6,"a":"Gustavo A. Madero","s":9,"p":"Consumidores de Ocio","r":0,"hr":3.59,"hp":1.92,"ho":2.31,"hn":0.95,"d":101,"pa":7.85,"pr":7.35}];
+
+    const MESES_SHORT = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const PERFILES_ORDER = ["Productivos", "Consumidores de Ocio", "Procrastinadores"];
+    const PERFIL_COLORS = {
+      "Productivos": "#FF758F",          // Coral vibrante claro
+      "Consumidores de Ocio": "#E63946", // Rojo carmesí PRO
+      "Procrastinadores": "#991B1B"      // Rojo rubí profundo
+    };
+
+    // Estado global de filtros
+    const state = {
+      alcaldia: "ALL",
+      perfil: "ALL",
+      riesgo: "ALL",
+      mes: "ALL"
+    };
+
+    // Instancias de gráficas Chart.js
+    let chartDonut = null;
+    let chartLine = null;
+    let chartBarAlcaldia = null;
+    let chartBarPerfil = null;
+    let chartBarSemestre = null;
+
+    // =========================================================================
+    // 2. PLUGINS PERSONALIZADOS DE CHART.JS (ESTILO POWER BI PRO SIN EJES X)
+    // =========================================================================
+    // Plugin para dibujar porcentajes dentro de los segmentos de la Dona
+    const donutLabelsPlugin = {
+      id: 'donutLabelsPlugin',
+      afterDatasetsDraw(chart) {
+        if (chart.config.type !== 'doughnut') return;
+        const { ctx } = chart;
+        const meta = chart.getDatasetMeta(0);
+        const dataset = chart.data.datasets[0];
+        const total = dataset.data.reduce((acc, v) => acc + v, 0);
+        if (!total) return;
+
+        ctx.save();
+        meta.data.forEach((arc, index) => {
+          const val = dataset.data[index];
+          const pct = (val / total) * 100;
+          if (pct < 6) return; // Evitar amontonamiento en segmentos muy pequeños
+          const pos = arc.tooltipPosition();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = '700 12px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(`${pct.toFixed(1)}%`, pos.x, pos.y);
+        });
+        ctx.restore();
+      }
+    };
+
+    // Plugin para dibujar los valores exactos al final de cada barra horizontal (como en Power BI)
+    const horizontalBarLabelsPlugin = {
+      id: 'horizontalBarLabelsPlugin',
+      afterDatasetsDraw(chart) {
+        if (chart.config.type !== 'bar' || chart.options.indexAxis !== 'y') return;
+        const { ctx } = chart;
+        const suffix = chart.options.plugins.customBarSuffix || '';
+        const decimals = chart.options.plugins.customBarDecimals ?? 2;
+
+        ctx.save();
+        chart.data.datasets.forEach((dataset, dsIndex) => {
+          const meta = chart.getDatasetMeta(dsIndex);
+          if (meta.hidden) return;
+          meta.data.forEach((bar, index) => {
+            const rawVal = dataset.data[index];
+            if (rawVal === null || rawVal === undefined || isNaN(rawVal)) return;
+            const text = `${Number(rawVal).toFixed(decimals)}${suffix}`;
+
+            ctx.font = chart.data.datasets.length > 1
+              ? '600 10.5px Inter, sans-serif'
+              : '700 11.5px Inter, sans-serif';
+            ctx.fillStyle = dsIndex === 0 ? '#F8FAFC' : '#CBD5E1';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, bar.x + 7, bar.y);
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    Chart.register(donutLabelsPlugin, horizontalBarLabelsPlugin);
+
+    // =========================================================================
+    // 3. INICIALIZACIÓN DE FILTROS Y DATOS
+    // =========================================================================
+    function initSlicers() {
+      const alcaldias = [...new Set(DATA.map(d => d.a))].sort((a, b) => a.localeCompare(b, 'es'));
+      const selAlc = document.getElementById('filterAlcaldia');
+      alcaldias.forEach(alc => {
+        const opt = document.createElement('option');
+        opt.value = alc;
+        opt.textContent = alc;
+        selAlc.appendChild(opt);
+      });
+
+      selAlc.addEventListener('change', (e) => {
+        state.alcaldia = e.target.value;
+        updateDashboard();
+      });
+
+      document.getElementById('filterPerfil').addEventListener('change', (e) => {
+        state.perfil = e.target.value;
+        updateDashboard();
+      });
+
+      document.getElementById('filterRiesgo').addEventListener('change', (e) => {
+        state.riesgo = e.target.value;
+        updateDashboard();
+      });
+
+      document.getElementById('filterMes').addEventListener('change', (e) => {
+        state.mes = e.target.value;
+        updateDashboard();
+      });
+
+      document.getElementById('btnResetFilters').addEventListener('click', resetAllFilters);
+    }
+
+    function resetAllFilters() {
+      state.alcaldia = "ALL";
+      state.perfil = "ALL";
+      state.riesgo = "ALL";
+      state.mes = "ALL";
+
+      document.getElementById('filterAlcaldia').value = "ALL";
+      document.getElementById('filterPerfil').value = "ALL";
+      document.getElementById('filterRiesgo').value = "ALL";
+      document.getElementById('filterMes').value = "ALL";
+
+      updateDashboard();
+    }
+
+    function getFilteredData() {
+      return DATA.filter(row => {
+        if (state.alcaldia !== "ALL" && row.a !== state.alcaldia) return false;
+        if (state.perfil !== "ALL" && row.p !== state.perfil) return false;
+        if (state.riesgo !== "ALL" && String(row.r) !== state.riesgo) return false;
+        if (state.mes !== "ALL" && String(row.m) !== state.mes) return false;
+        return true;
+      });
+    }
+
+    // =========================================================================
+    // 4. ACTUALIZACIÓN DE TARJETAS KPI E INDICADORES DE FILTRO
+    // =========================================================================
+    function updateKPIs(filtered) {
+      const totalSample = DATA.length;
+      const n = filtered.length;
+
+      // Contador de filtros activos
+      let activeCount = 0;
+      if (state.alcaldia !== "ALL") activeCount++;
+      if (state.perfil !== "ALL") activeCount++;
+      if (state.riesgo !== "ALL") activeCount++;
+      if (state.mes !== "ALL") activeCount++;
+
+      const badgeCount = document.getElementById('activeFilterCount');
+      if (activeCount > 0) {
+        badgeCount.textContent = activeCount;
+        badgeCount.classList.remove('hidden');
+      } else {
+        badgeCount.classList.add('hidden');
+      }
+
+      // Resaltar visualmente tarjetas con selección cruzada
+      document.getElementById('cardDonut').classList.toggle('pbi-card-active', state.perfil !== "ALL");
+      document.getElementById('badgeDonutFilter').classList.toggle('hidden', state.perfil === "ALL");
+      document.getElementById('cardBarAlcaldia').classList.toggle('pbi-card-active', state.alcaldia !== "ALL");
+      document.getElementById('badgeAlcaldiaFilter').classList.toggle('hidden', state.alcaldia === "ALL");
+      document.getElementById('cardLine').classList.toggle('pbi-card-active', state.mes !== "ALL");
+
+      const emptyBanner = document.getElementById('emptyStateBanner');
+      if (n === 0) {
+        emptyBanner.classList.remove('hidden');
+        document.getElementById('kpiTotal').textContent = "0";
+        document.getElementById('kpiTotalSub').textContent = "0.0% del total analizado";
+        document.getElementById('kpiPromedioReal').textContent = "—";
+        document.getElementById('kpiPromedioRealSub').textContent = "Sin registros en selección";
+        document.getElementById('kpiPromedioPred').textContent = "—";
+        document.getElementById('kpiPromedioPredSub').textContent = "Sin registros en selección";
+        document.getElementById('kpiRedes').textContent = "—";
+        document.getElementById('kpiRedesSub').textContent = "Sin registros en selección";
+        document.getElementById('kpiRiesgoPct').textContent = "0.0%";
+        document.getElementById('kpiRiesgoSub').textContent = "0 alumnos en riesgo escolar";
+        return;
+      }
+
+      emptyBanner.classList.add('hidden');
+
+      const sumPa = filtered.reduce((acc, d) => acc + d.pa, 0);
+      const sumPr = filtered.reduce((acc, d) => acc + d.pr, 0);
+      const sumHr = filtered.reduce((acc, d) => acc + d.hr, 0);
+      const sumRisk = filtered.reduce((acc, d) => acc + d.r, 0);
+      const sumAbsErr = filtered.reduce((acc, d) => acc + Math.abs(d.pa - d.pr), 0);
+
+      const avgPa = sumPa / n;
+      const avgPr = sumPr / n;
+      const avgHr = sumHr / n;
+      const riskPct = (sumRisk / n) * 100;
+      const mae = sumAbsErr / n;
+      const samplePct = (n / totalSample) * 100;
+
+      document.getElementById('kpiTotal').textContent = n.toLocaleString('es-MX');
+      document.getElementById('kpiTotalSub').textContent = `${samplePct.toFixed(1)}% del total analizado (${totalSample})`;
+
+      document.getElementById('kpiPromedioReal').textContent = avgPa.toFixed(2);
+      document.getElementById('kpiPromedioRealSub').textContent = avgPa >= 7.5
+        ? "Rendimiento grupal estable (>= 7.5)"
+        : "Alerta: media grupal bajo 7.50";
+
+      document.getElementById('kpiPromedioPred').textContent = avgPr.toFixed(2);
+      document.getElementById('kpiPromedioPredSub').textContent = `Error absoluto medio (MAE): ${mae.toFixed(2)} pts`;
+
+      document.getElementById('kpiRedes').textContent = `${avgHr.toFixed(2)}`;
+      document.getElementById('kpiRedesSub').textContent = `Horas promedio diarias en pantalla`;
+
+      document.getElementById('kpiRiesgoPct').textContent = `${riskPct.toFixed(1)}%`;
+      document.getElementById('kpiRiesgoSub').textContent = `${sumRisk} de ${n} alumnos con promedio < 7.5`;
+    }
+
+    // =========================================================================
+    // 5. CONSTRUCCIÓN Y ACTUALIZACIÓN DE GRÁFICAS (CHART.JS)
+    // =========================================================================
+    function buildCharts() {
+      Chart.defaults.color = '#94A3B8';
+      Chart.defaults.font.family = "'Inter', sans-serif";
+
+      // 5.1 DONUT CHART: Distribución por Perfil Conductual
+      const ctxDonut = document.getElementById('chartDonut').getContext('2d');
+      chartDonut = new Chart(ctxDonut, {
+        type: 'doughnut',
+        data: {
+          labels: PERFILES_ORDER,
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: PERFILES_ORDER.map(p => PERFIL_COLORS[p]),
+            borderColor: '#0D1017',
+            borderWidth: 3,
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '62%',
+          animation: { duration: 450 },
+          onClick: (_, elements) => {
+            if (!elements.length) return;
+            const idx = elements[0].index;
+            const clickedPerfil = PERFILES_ORDER[idx];
+            state.perfil = (state.perfil === clickedPerfil) ? "ALL" : clickedPerfil;
+            document.getElementById('filterPerfil').value = state.perfil;
+            updateDashboard();
+          },
+          onHover: (event, elements) => {
+            event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#131722',
+              titleColor: '#F8FAFC',
+              bodyColor: '#CBD5E1',
+              borderColor: '#2C3240',
+              borderWidth: 1.5,
+              padding: 10,
+              callbacks: {
+                label: (ctx) => {
+                  const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                  const val = ctx.parsed;
+                  const pct = total ? ((val / total) * 100).toFixed(1) : '0.0';
+                  return ` ${val} estudiantes (${pct}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 5.2 LINE CHART: Evolución Mensual (Ene - Dic)
+      const ctxLine = document.getElementById('chartLine').getContext('2d');
+      chartLine = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: MESES_SHORT.slice(1),
+          datasets: [
+            {
+              label: 'Promedio Académico (pts)',
+              data: [],
+              borderColor: '#F8FAFC',
+              backgroundColor: 'rgba(248, 250, 252, 0.08)',
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: true,
+              pointRadius: 4.5,
+              pointHoverRadius: 7,
+              pointBackgroundColor: '#F8FAFC',
+              pointBorderColor: '#0D1017',
+              pointBorderWidth: 1.5
+            },
+            {
+              label: 'Uso Redes Sociales (hrs/día)',
+              data: [],
+              borderColor: '#FF4D5A',
+              backgroundColor: 'rgba(230, 57, 70, 0.14)',
+              borderWidth: 2.5,
+              tension: 0.35,
+              fill: true,
+              pointRadius: 4.5,
+              pointHoverRadius: 7,
+              pointBackgroundColor: '#FF4D5A',
+              pointBorderColor: '#0D1017',
+              pointBorderWidth: 1.5
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          animation: { duration: 450 },
+          onClick: (_, elements) => {
+            if (!elements.length) return;
+            const monthNum = String(elements[0].index + 1);
+            state.mes = (state.mes === monthNum) ? "ALL" : monthNum;
+            document.getElementById('filterMes').value = state.mes;
+            updateDashboard();
+          },
+          onHover: (event, elements) => {
+            event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(44, 50, 64, 0.35)', drawBorder: false },
+              ticks: { color: '#94A3B8', font: { size: 11, weight: '500' } }
+            },
+            y: {
+              min: 0,
+              max: 10,
+              grid: { color: 'rgba(44, 50, 64, 0.35)', drawBorder: false },
+              ticks: {
+                color: '#64748B',
+                stepSize: 2,
+                font: { size: 11 }
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#131722',
+              titleColor: '#F8FAFC',
+              bodyColor: '#CBD5E1',
+              borderColor: '#2C3240',
+              borderWidth: 1.5,
+              padding: 10,
+              callbacks: {
+                title: (items) => `Mes: ${items[0].label}`,
+                label: (ctx) => {
+                  const val = ctx.parsed.y;
+                  if (val === null) return ` ${ctx.dataset.label}: Sin datos`;
+                  const unit = ctx.datasetIndex === 0 ? 'pts' : 'hrs/día';
+                  return ` ${ctx.dataset.label.split(' (')[0]}: ${val.toFixed(2)} ${unit}`;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 5.3 BARRA HORIZONTAL 1: Promedio Académico por Alcaldía CDMX (sin eje X ni títulos redundantes)
+      const ctxBarAlc = document.getElementById('chartBarAlcaldia').getContext('2d');
+      chartBarAlcaldia = new Chart(ctxBarAlc, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Promedio Académico',
+            data: [],
+            backgroundColor: '#E63946',
+            hoverBackgroundColor: '#FF4D5A',
+            borderRadius: 6,
+            barThickness: 18
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 450 },
+          layout: { padding: { right: 46 } },
+          onClick: (_, elements) => {
+            if (!elements.length) return;
+            const clickedAlc = chartBarAlcaldia.data.labels[elements[0].index];
+            state.alcaldia = (state.alcaldia === clickedAlc) ? "ALL" : clickedAlc;
+            document.getElementById('filterAlcaldia').value = state.alcaldia;
+            updateDashboard();
+          },
+          onHover: (event, elements) => {
+            event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          scales: {
+            x: {
+              display: false, // Oculta eje X como en el video
+              min: 0,
+              max: 10
+            },
+            y: {
+              grid: { display: false, drawBorder: false },
+              title: { display: false },
+              ticks: { color: '#E2E8F0', font: { size: 11.5, weight: '500' } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            customBarSuffix: '',
+            customBarDecimals: 2,
+            tooltip: {
+              backgroundColor: '#131722',
+              titleColor: '#F8FAFC',
+              bodyColor: '#CBD5E1',
+              borderColor: '#2C3240',
+              borderWidth: 1.5,
+              callbacks: {
+                label: (ctx) => ` Promedio: ${ctx.parsed.x.toFixed(2)} pts`
+              }
+            }
+          }
+        }
+      });
+
+      // 5.4 BARRA HORIZONTAL 2: Horas en Redes Sociales por Perfil Conductual
+      const ctxBarPerfil = document.getElementById('chartBarPerfil').getContext('2d');
+      chartBarPerfil = new Chart(ctxBarPerfil, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Horas en Redes',
+            data: [],
+            backgroundColor: [],
+            borderRadius: 8,
+            barThickness: 32
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 450 },
+          layout: { padding: { right: 56 } },
+          onClick: (_, elements) => {
+            if (!elements.length) return;
+            const clickedP = chartBarPerfil.data.labels[elements[0].index];
+            state.perfil = (state.perfil === clickedP) ? "ALL" : clickedP;
+            document.getElementById('filterPerfil').value = state.perfil;
+            updateDashboard();
+          },
+          onHover: (event, elements) => {
+            event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          scales: {
+            x: {
+              display: false, // Oculta eje X
+              min: 0,
+              max: 7.5
+            },
+            y: {
+              grid: { display: false, drawBorder: false },
+              title: { display: false },
+              ticks: { color: '#E2E8F0', font: { size: 12, weight: '600' } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            customBarSuffix: ' hrs',
+            customBarDecimals: 2,
+            tooltip: {
+              backgroundColor: '#131722',
+              titleColor: '#F8FAFC',
+              bodyColor: '#CBD5E1',
+              borderColor: '#2C3240',
+              borderWidth: 1.5,
+              callbacks: {
+                label: (ctx) => ` Uso diario: ${ctx.parsed.x.toFixed(2)} hrs/día`
+              }
+            }
+          }
+        }
+      });
+
+      // 5.5 BARRA HORIZONTAL 3: Promedio Real vs. Predicho (RL) por Semestre (1° a 9°)
+      const ctxBarSem = document.getElementById('chartBarSemestre').getContext('2d');
+      chartBarSemestre = new Chart(ctxBarSem, {
+        type: 'bar',
+        data: {
+          labels: ['1°', '2°', '3°', '4°', '5°', '6°', '7°', '8°', '9°'],
+          datasets: [
+            {
+              label: 'Promedio Real',
+              data: [],
+              backgroundColor: '#FF4D5A',
+              borderRadius: 4,
+              barPercentage: 0.78,
+              categoryPercentage: 0.76
+            },
+            {
+              label: 'Predicho (RL)',
+              data: [],
+              backgroundColor: '#991B1B',
+              borderRadius: 4,
+              barPercentage: 0.78,
+              categoryPercentage: 0.76
+            }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 450 },
+          layout: { padding: { right: 44 } },
+          scales: {
+            x: {
+              display: false, // Oculta eje X
+              min: 0,
+              max: 10
+            },
+            y: {
+              grid: { display: false, drawBorder: false },
+              title: { display: false },
+              ticks: { color: '#E2E8F0', font: { size: 11.5, weight: '600' } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            customBarSuffix: '',
+            customBarDecimals: 2,
+            tooltip: {
+              backgroundColor: '#131722',
+              titleColor: '#F8FAFC',
+              bodyColor: '#CBD5E1',
+              borderColor: '#2C3240',
+              borderWidth: 1.5,
+              callbacks: {
+                title: (items) => `Semestre ${items[0].label}`,
+                label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.x.toFixed(2)} pts`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateCharts(filtered) {
+      // 1. Actualizar Dona y su leyenda lateral interactiva
+      const countsPerfil = PERFILES_ORDER.map(p => filtered.filter(d => d.p === p).length);
+      const totalN = filtered.length;
+      chartDonut.data.datasets[0].data = countsPerfil;
+      chartDonut.update();
+
+      const legendContainer = document.getElementById('donutCustomLegend');
+      legendContainer.innerHTML = '';
+      PERFILES_ORDER.forEach((perfil, idx) => {
+        const count = countsPerfil[idx];
+        const pct = totalN ? ((count / totalN) * 100).toFixed(1) : '0.0';
+        const isSelected = state.perfil === perfil;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `w-full text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+          isSelected
+            ? 'bg-[#E63946]/15 border-[#FF4D5A]'
+            : 'bg-[#0D1017]/60 border-[#2C3240] hover:border-slate-500'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${PERFIL_COLORS[perfil]}"></span>
+            <span class="text-xs font-semibold text-slate-200 truncate">${perfil}</span>
+          </div>
+          <div class="text-right shrink-0 ml-2">
+            <span class="text-xs font-bold text-white">${pct}%</span>
+            <span class="block text-[10px] text-slate-400">${count} est.</span>
+          </div>
+        `;
+        btn.addEventListener('click', () => {
+          state.perfil = (state.perfil === perfil) ? "ALL" : perfil;
+          document.getElementById('filterPerfil').value = state.perfil;
+          updateDashboard();
+        });
+        legendContainer.appendChild(btn);
+      });
+
+      // 2. Actualizar Líneas Mensuales (Ene = 1 ... Dic = 12)
+      const monthlyPa = [];
+      const monthlyHr = [];
+      for (let m = 1; m <= 12; m++) {
+        const rows = filtered.filter(d => d.m === m);
+        if (rows.length === 0) {
+          monthlyPa.push(null);
+          monthlyHr.push(null);
+        } else {
+          monthlyPa.push(rows.reduce((s, r) => s + r.pa, 0) / rows.length);
+          monthlyHr.push(rows.reduce((s, r) => s + r.hr, 0) / rows.length);
+        }
+      }
+      chartLine.data.datasets[0].data = monthlyPa;
+      chartLine.data.datasets[1].data = monthlyHr;
+      chartLine.update();
+
+      // 3. Actualizar Barra 1: Promedio Académico por Alcaldía (ordenado mayor a menor)
+      const alcaldiaMap = {};
+      filtered.forEach(d => {
+        if (!alcaldiaMap[d.a]) alcaldiaMap[d.a] = { sum: 0, count: 0 };
+        alcaldiaMap[d.a].sum += d.pa;
+        alcaldiaMap[d.a].count += 1;
+      });
+      const alcaldiaStats = Object.keys(alcaldiaMap)
+        .map(a => ({ name: a, avg: alcaldiaMap[a].sum / alcaldiaMap[a].count }))
+        .sort((a, b) => b.avg - a.avg);
+
+      chartBarAlcaldia.data.labels = alcaldiaStats.map(x => x.name);
+      chartBarAlcaldia.data.datasets[0].data = alcaldiaStats.map(x => x.avg);
+      chartBarAlcaldia.data.datasets[0].backgroundColor = alcaldiaStats.map((x, i) =>
+        i === 0 ? '#FF4D5A' : (i < 4 ? '#E63946' : '#B91C1C')
+      );
+      chartBarAlcaldia.update();
+
+      // 4. Actualizar Barra 2: Horas en Redes Sociales por Perfil Conductual (ordenado mayor a menor)
+      const perfilStats = PERFILES_ORDER.map(p => {
+        const rows = filtered.filter(d => d.p === p);
+        const avgHr = rows.length ? rows.reduce((s, r) => s + r.hr, 0) / rows.length : 0;
+        return { name: p, avgHr, count: rows.length };
+      }).filter(x => x.count > 0 || state.perfil === "ALL")
+        .sort((a, b) => b.avgHr - a.avgHr);
+
+      chartBarPerfil.data.labels = perfilStats.map(x => x.name);
+      chartBarPerfil.data.datasets[0].data = perfilStats.map(x => x.avgHr);
+      chartBarPerfil.data.datasets[0].backgroundColor = perfilStats.map(x => PERFIL_COLORS[x.name]);
+      chartBarPerfil.update();
+
+      // 5. Actualizar Barra 3: Promedio Real vs Predicho por Semestre (1° a 9°)
+      const semReal = [];
+      const semPred = [];
+      for (let s = 1; s <= 9; s++) {
+        const rows = filtered.filter(d => d.s === s);
+        if (rows.length === 0) {
+          semReal.push(0);
+          semPred.push(0);
+        } else {
+          semReal.push(rows.reduce((acc, r) => acc + r.pa, 0) / rows.length);
+          semPred.push(rows.reduce((acc, r) => acc + r.pr, 0) / rows.length);
+        }
+      }
+      chartBarSemestre.data.datasets[0].data = semReal;
+      chartBarSemestre.data.datasets[1].data = semPred;
+      chartBarSemestre.update();
+    }
+
+    function updateDashboard() {
+      const filtered = getFilteredData();
+      updateKPIs(filtered);
+      updateCharts(filtered);
+    }
+
+    // =========================================================================
+    // 6. LÓGICA DEL SIMULADOR DE REGRESIÓN LINEAL MÚLTIPLE
+    // =========================================================================
+    function calculateSimulation() {
+      const hr = parseFloat(document.getElementById('simRedes').value);
+      const hp = parseFloat(document.getElementById('simProd').value);
+      const ho = parseFloat(document.getElementById('simOcio').value);
+      const hn = parseFloat(document.getElementById('simNoct').value);
+      const d = parseFloat(document.getElementById('simDesb').value);
+
+      document.getElementById('valSimRedes').textContent = `${hr.toFixed(2)} hrs`;
+      document.getElementById('valSimProd').textContent = `${hp.toFixed(2)} hrs`;
+      document.getElementById('valSimOcio').textContent = `${ho.toFixed(2)} hrs`;
+      document.getElementById('valSimNoct').textContent = `${hn.toFixed(2)} hrs`;
+      document.getElementById('valSimDesb').textContent = `${Math.round(d)} desbloqueos`;
+
+      // Ecuación exacta de Regresión Lineal Múltiple:
+      // Promedio = 8.2882 - 0.2649*Redes + 0.3671*Productividad - 0.1531*Ocio - 0.2634*Nocturno - 0.0011*Desbloqueos
+      const rawPred = 8.2882 - (0.2649 * hr) + (0.3671 * hp) - (0.1531 * ho) - (0.2634 * hn) - (0.0011 * d);
+      const clampedPred = Math.max(0, Math.min(10, rawPred));
+
+      document.getElementById('simResultScore').textContent = clampedPred.toFixed(2);
+      document.getElementById('simRawNote').textContent = `Valor exacto de ecuación: ${rawPred.toFixed(2)} pts`;
+
+      const riskBadge = document.getElementById('simRiskBadge');
+      if (clampedPred < 7.5) {
+        riskBadge.textContent = "Con Riesgo (< 7.5)";
+        riskBadge.className = "inline-block mt-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#E63946]/20 text-[#FF4D5A] border border-[#E63946]/40";
+      } else {
+        riskBadge.textContent = "Estable (>= 7.5)";
+        riskBadge.className = "inline-block mt-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/40";
+      }
+
+      // Asignación al centroide K-Means más cercano (basado en medias empíricas de los 3 clústeres)
+      const centroids = [
+        { name: "Productivos", hr: 1.63, hp: 3.92, ho: 1.25, hn: 0.54, d: 58 },
+        { name: "Consumidores de Ocio", hr: 3.45, hp: 2.13, ho: 3.12, hn: 1.38, d: 96 },
+        { name: "Procrastinadores", hr: 5.57, hp: 1.08, ho: 3.58, hn: 2.52, d: 141 }
+      ];
+      let bestCluster = centroids[0].name;
+      let minDist = Infinity;
+      centroids.forEach(c => {
+        const dist =
+          Math.pow((hr - c.hr) / 1.5, 2) +
+          Math.pow((hp - c.hp) / 1.2, 2) +
+          Math.pow((ho - c.ho) / 1.1, 2) +
+          Math.pow((hn - c.hn) / 0.8, 2) +
+          Math.pow((d - c.d) / 35, 2);
+        if (dist < minDist) {
+          minDist = dist;
+          bestCluster = c.name;
+        }
+      });
+      document.getElementById('simClusterBadge').textContent = bestCluster;
+
+      // Desglose de aportes
+      const posContrib = 0.3671 * hp;
+      const negContrib = -(0.2649 * hr + 0.1531 * ho + 0.2634 * hn + 0.0011 * d);
+      document.getElementById('simContribPos').textContent = `+${posContrib.toFixed(2)} pts`;
+      document.getElementById('simContribNeg').textContent = `${negContrib.toFixed(2)} pts`;
+    }
+
+    function applySimPreset(type) {
+      if (type === 'productivo') {
+        document.getElementById('simRedes').value = 1.4;
+        document.getElementById('simProd').value = 4.5;
+        document.getElementById('simOcio').value = 1.1;
+        document.getElementById('simNoct').value = 0.4;
+        document.getElementById('simDesb').value = 52;
+      } else if (type === 'ocio') {
+        document.getElementById('simRedes').value = 3.5;
+        document.getElementById('simProd').value = 2.2;
+        document.getElementById('simOcio').value = 3.2;
+        document.getElementById('simNoct').value = 1.4;
+        document.getElementById('simDesb').value = 96;
+      } else {
+        document.getElementById('simRedes').value = 6.1;
+        document.getElementById('simProd').value = 0.9;
+        document.getElementById('simOcio').value = 3.8;
+        document.getElementById('simNoct').value = 2.7;
+        document.getElementById('simDesb').value = 148;
+      }
+      calculateSimulation();
+    }
+
+    function initSimulatorModal() {
+      const modal = document.getElementById('simulatorModal');
+      document.getElementById('btnOpenSimulator').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        calculateSimulation();
+      });
+      document.getElementById('btnCloseSimulator').addEventListener('click', () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+      });
+
+      ['simRedes', 'simProd', 'simOcio', 'simNoct', 'simDesb'].forEach(id => {
+        document.getElementById(id).addEventListener('input', calculateSimulation);
+      });
+    }
+
+    // =========================================================================
+    // 7. ARRANQUE DE LA APLICACIÓN
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initSlicers();
+      buildCharts();
+      initSimulatorModal();
+      updateDashboard();
+    });
+  </script>
+</body>
+</html>

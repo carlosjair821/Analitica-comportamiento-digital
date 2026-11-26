@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ruta Crítica (CPM) | Gestión de Proyecto CRISP-DM - CDMX</title>
+  <!-- Fuente Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            pbiBg: '#0D1017',
+            pbiCard: '#151A24',
+            pbiBorder: '#2A3142',
+            critRed: '#EF4444',
+            critCrimson: '#FF4D5A',
+            slackBlue: '#0EA5E9',
+            slackCyan: '#38BDF8',
+            jiraDone: '#10B981',
+            jiraProgress: '#F59E0B',
+            jiraTodo: '#64748B',
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #0D1017;
+      color: #F8FAFC;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Contenedor estilo ejecutivo Power BI Dark Mode */
+    .pbi-card {
+      background-color: #151A24;
+      border: 1px solid #2A3142;
+      border-radius: 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .pbi-card:hover {
+      border-color: #384259;
+    }
+
+    /* Brillo sutil para elementos en Ruta Crítica */
+    .critical-glow {
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.32);
+    }
+    .critical-banner-glow {
+      box-shadow: 0 0 22px rgba(239, 68, 68, 0.16);
+    }
+
+    /* Barra de holgura punteada/translúcida en Gantt */
+    .slack-bar-pattern {
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(56, 189, 248, 0.16),
+        rgba(56, 189, 248, 0.16) 6px,
+        rgba(14, 165, 233, 0.06) 6px,
+        rgba(14, 165, 233, 0.06) 12px
+      );
+      border: 1.5px dashed #38BDF8;
+    }
+
+    /* Selectores desplegables oscuros */
+    .pbi-select {
+      background-color: #0D1017;
+      border: 1px solid #2A3142;
+      border-radius: 10px;
+      color: #F8FAFC;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394A3B8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem center;
+      background-size: 0.95rem;
+      padding-right: 2.1rem;
+      transition: border-color 0.2s ease;
+    }
+    .pbi-select:hover, .pbi-select:focus {
+      border-color: #FF4D5A;
+      outline: none;
+    }
+
+    /* Nodos interactivos en SVG PERT/CPM */
+    .pert-node {
+      cursor: pointer;
+      transition: transform 0.18s ease, opacity 0.2s ease;
+    }
+    .pert-node:hover {
+      filter: brightness(1.08);
+    }
+
+    /* Scrollbars limpios */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0D1017;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2A3142;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-[#EF4444] selection:text-white">
+
+  <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+    <!-- =====================================================================
+         1. BARRA SUPERIOR (TÍTULO, SUBTÍTULO Y RESTABLECER VALORES)
+         ===================================================================== -->
+    <header class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-1">
+      <div class="flex items-start gap-3.5">
+        <div class="w-1.5 h-12 rounded-full bg-gradient-to-b from-[#FF4D5A] to-[#991B1B] shrink-0 mt-0.5"></div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-lg sm:text-xl md:text-2xl font-extrabold tracking-tight text-white">
+              MÉTODO DE LA RUTA CRÍTICA (CPM) <span class="text-[#FF4D5A] mx-1">|</span> GESTIÓN JIRA &amp; CRISP-DM
+            </h1>
+            <span class="px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider rounded-full bg-[#EF4444]/15 text-[#FF4D5A] border border-[#EF4444]/40">
+              Tiempo Real
+            </span>
+          </div>
+          <p class="text-xs sm:text-sm text-slate-400 mt-1">
+            Proyecto: <span class="text-slate-200 font-medium">"Modelado Estadístico y Predicción del Comportamiento Digital en Universitarios de la CDMX"</span> · 5 Integrantes · 10 Tareas Jira
+          </p>
+        </div>
+      </div>
+
+      <!-- Controles de Simulación Rápida y Botón Reset -->
+      <div class="flex flex-wrap items-center gap-2.5">
+        <button type="button" onclick="simulateScenario('clusteringDelay')"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#38BDF8] bg-[#0EA5E9]/10 hover:bg-[#0EA5E9]/20 border border-[#0EA5E9]/35 transition cursor-pointer"
+          title="Aumenta T5 de 3 a 5 días para observar cómo la rama Clustering supera a la Predictiva y se vuelve crítica">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Simular Retraso Clustering (+2d en T5)
+        </button>
+
+        <button type="button" onclick="simulateScenario('statsDelay')"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/35 transition cursor-pointer"
+          title="Aumenta T4 de 2 a 5 días para convertir la rama Estadística en la nueva Ruta Crítica">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Simular Retraso Estadística (+3d en T4)
+        </button>
+
+        <button id="btnResetAll" type="button" onclick="resetOriginalData()"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-[#EF4444] to-[#B91C1C] hover:from-[#FF4D5A] hover:to-[#DC2626] border border-[#FF4D5A]/40 shadow-lg shadow-[#EF4444]/15 transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Restablecer Valores Originales
+        </button>
+      </div>
+    </header>
+
+    <!-- =====================================================================
+         2. 4 TARJETAS KPI DINÁMICAS + BANNER DE SECUENCIA CRÍTICA
+         ===================================================================== -->
+    <section aria-label="Indicadores Clave CPM" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- KPI 1: Duración Total del Proyecto -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Duración Total del Proyecto</span>
+          <span id="kpiDeltaBadge" class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-800 text-slate-300 border border-[#2A3142]">
+            Base: 16d
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2 my-2">
+          <span id="kpiTotalDuration" class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">16</span>
+          <span class="text-base font-bold text-[#FF4D5A]">días</span>
+        </div>
+        <div id="kpiDurationSub" class="text-xs text-slate-400">Tiempo mínimo óptimo sin retrasos</div>
+      </div>
+
+      <!-- KPI 2: Tareas en Ruta Crítica -->
+      <div class="pbi-card p-4 flex flex-col justify-between border-[#EF4444]/40">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Tareas en Ruta Crítica</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-[#EF4444]/15 text-[#FF4D5A] border border-[#EF4444]/35">
+            Holgura = 0
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2 my-2">
+          <span id="kpiCriticalCount" class="text-3xl sm:text-4xl font-extrabold text-[#FF4D5A] tracking-tight">6 / 10</span>
+          <span class="text-sm font-semibold text-slate-400">tareas</span>
+        </div>
+        <div id="kpiCriticalSub" class="text-xs text-slate-400">60.0% de actividades determinan la entrega</div>
+      </div>
+
+      <!-- KPI 3: Avance Global del Proyecto (Jira) -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Avance Global (Jira)</span>
+          <span class="text-[11px] font-medium text-[#10B981]">100% / 50% / 0%</span>
+        </div>
+        <div class="flex items-baseline gap-2 my-2">
+          <span id="kpiProgressPct" class="text-3xl sm:text-4xl font-extrabold text-[#10B981] tracking-tight">15.0%</span>
+          <span id="kpiProgressWeighted" class="text-xs font-medium text-slate-400">(21.9% por días)</span>
+        </div>
+        <div class="w-full bg-[#0D1017] h-2 rounded-full overflow-hidden border border-[#2A3142]">
+          <div id="kpiProgressBar" class="bg-gradient-to-r from-[#10B981] to-[#34D399] h-full transition-all duration-300" style="width: 15%;"></div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Holgura Máxima Disponible -->
+      <div class="pbi-card p-4 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Holgura Máxima Disponible</span>
+          <span class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-[#0EA5E9]/15 text-[#38BDF8] border border-[#0EA5E9]/35">
+            Margen H &gt; 0
+          </span>
+        </div>
+        <div class="flex items-baseline gap-2 my-2">
+          <span id="kpiMaxSlack" class="text-3xl sm:text-4xl font-extrabold text-[#38BDF8] tracking-tight">2</span>
+          <span class="text-base font-bold text-[#38BDF8]">días</span>
+        </div>
+        <div id="kpiMaxSlackSub" class="text-xs text-slate-400 truncate">Mayor margen en: T3, T4</div>
+      </div>
+    </section>
+
+    <!-- BANNER DE SECUENCIA EXACTA DE LA RUTA CRÍTICA -->
+    <section aria-label="Secuencia Ruta Crítica" class="pbi-card critical-banner-glow p-3.5 sm:px-5 sm:py-3.5 border-[#EF4444]/50 bg-gradient-to-r from-[#151A24] via-[#1C1622] to-[#151A24]">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="flex items-center gap-2.5 shrink-0">
+          <span class="w-2.5 h-2.5 rounded-full bg-[#FF4D5A] animate-pulse"></span>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-[#FF4D5A]">
+            Secuencia Ruta Crítica Activa:
+          </span>
+        </div>
+        <div id="criticalPathSequenceContainer" class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <!-- Renderizado dinámicamente por JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         3. PANEL DE FILTROS DINÁMICOS (SLICERS)
+         ===================================================================== -->
+    <section aria-label="Filtros Dinámicos" class="pbi-card p-3.5 sm:p-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
+        <!-- Filtro 1: Responsable -->
+        <div>
+          <label for="filterResponsable" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Responsable (Equipo CDMX)
+          </label>
+          <select id="filterResponsable" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todos los Responsables (5)</option>
+            <option value="Persona 1 (Inicio y Datos)">Persona 1 (Inicio y Datos)</option>
+            <option value="Persona 2 (Estadística)">Persona 2 (Estadística)</option>
+            <option value="Persona 3 (Perfiles)">Persona 3 (Perfiles)</option>
+            <option value="Persona 4 (Predicción)">Persona 4 (Predicción)</option>
+            <option value="Persona 5 (Dashboards y Cierre)">Persona 5 (Dashboards y Cierre)</option>
+          </select>
+        </div>
+
+        <!-- Filtro 2: Tipo de Ruta -->
+        <div>
+          <label for="filterTipoRuta" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Tipo de Ruta (CPM)
+          </label>
+          <select id="filterTipoRuta" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todas las Tareas (10)</option>
+            <option value="CRITICAL">Solo Ruta Crítica (H = 0)</option>
+            <option value="SLACK">Con Holgura Disponible (H &gt; 0)</option>
+          </select>
+        </div>
+
+        <!-- Filtro 3: Estado Jira -->
+        <div>
+          <label for="filterEstadoJira" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Estado del Tablero Jira
+          </label>
+          <select id="filterEstadoJira" class="pbi-select w-full px-3 py-2 text-xs sm:text-sm font-medium cursor-pointer">
+            <option value="ALL">Todos los Estados Jira</option>
+            <option value="Listo">Listo (100%)</option>
+            <option value="En curso">En curso (50%)</option>
+            <option value="Por hacer">Por hacer (0%)</option>
+          </select>
+        </div>
+
+        <!-- Resumen de Filtrado + Limpiar Filtros -->
+        <div class="flex items-center justify-between sm:justify-end gap-3 h-[38px]">
+          <span id="filterSummaryText" class="text-xs text-slate-400">
+            Mostrando <strong class="text-white">10</strong> de 10 tareas
+          </span>
+          <button id="btnClearFilters" type="button" onclick="clearSlicers()"
+            class="hidden px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 bg-[#0D1017] hover:bg-[#1E2536] border border-[#2A3142] transition cursor-pointer">
+            Limpiar filtros
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         4. DIAGRAMA DE GANTT INTERACTIVO CON HOLGURA VISUAL
+         ===================================================================== -->
+    <section aria-label="Diagrama de Gantt Interactivo" class="pbi-card p-4 sm:p-5 space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            Diagrama de Gantt Interactivo con Holgura Visual
+            <span class="text-xs font-medium text-slate-400">(Simulador What-If en vivo)</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Modifica la duración (<code class="text-slate-200">-1d / +1d</code>) en cualquier fila para observar cómo se desplazan las dependencias y si cambia la Ruta Crítica.
+          </p>
+        </div>
+
+        <!-- Leyenda de Colores -->
+        <div class="flex flex-wrap items-center gap-4 text-xs bg-[#0D1017] px-3.5 py-2 rounded-xl border border-[#2A3142]">
+          <span class="inline-flex items-center gap-1.5 text-slate-200 font-medium">
+            <span class="w-3.5 h-3 rounded-sm bg-gradient-to-r from-[#EF4444] to-[#FF4D5A] critical-glow"></span>
+            Ruta Crítica (H = 0)
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-slate-200 font-medium">
+            <span class="w-3.5 h-3 rounded-sm bg-gradient-to-r from-[#0EA5E9] to-[#38BDF8]"></span>
+            Ejecución Temprana (ES–EF)
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-[#38BDF8] font-medium">
+            <span class="w-4 h-3 rounded-sm slack-bar-pattern"></span>
+            Holgura Disponible (H &gt; 0)
+          </span>
+        </div>
+      </div>
+
+      <!-- Contenedor Scrollable del Gantt -->
+      <div id="ganttContainer" class="overflow-x-auto border border-[#2A3142] rounded-xl bg-[#0D1017]/70">
+        <!-- Generado dinámicamente por JS -->
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         5. DIAGRAMA DE RED DE PRECEDENCIAS (PERT/CPM) EN SVG + PANEL DETALLE
+         ===================================================================== -->
+    <section aria-label="Red de Precedencias PERT CPM" class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+      <!-- SVG PERT/CPM (8 columnas en XL) -->
+      <div class="xl:col-span-8 pbi-card p-4 sm:p-5 flex flex-col justify-between space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-white">Red de Precedencias PERT / CPM (3 Ramas Paralelas)</h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Haz clic en cualquier nodo para inspeccionar sus tiempos <strong class="text-slate-300">ES, EF, LS, LF</strong>, holgura e impacto en el proyecto.
+            </p>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] shrink-0">
+            <span class="inline-flex items-center gap-1 text-[#FF4D5A] font-semibold">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span> Crítica (H=0)
+            </span>
+            <span class="inline-flex items-center gap-1 text-[#38BDF8] font-semibold">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#0EA5E9]"></span> No Crítica (H&gt;0)
+            </span>
+          </div>
+        </div>
+
+        <!-- SVG Responsivo -->
+        <div class="w-full overflow-x-auto bg-[#0D1017] rounded-xl border border-[#2A3142] p-2">
+          <svg id="pertSvg" viewBox="0 0 1160 440" class="w-full min-w-[780px] h-auto select-none" role="img" aria-label="Diagrama de red PERT CPM con 10 tareas">
+            <!-- Renderizado dinámicamente por JS -->
+          </svg>
+        </div>
+
+        <!-- Guía de lectura de nodo -->
+        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
+          <span>Estructura del nodo: <strong class="text-slate-200">Superior:</strong> ES (Inicio Temprano) | ID | EF (Fin Temprano) · <strong class="text-slate-200">Inferior:</strong> LS (Inicio Tardío) | H (Holgura) | LF (Fin Tardío)</span>
+        </div>
+      </div>
+
+      <!-- Panel de Detalle del Nodo Seleccionado (4 columnas en XL) -->
+      <div id="nodeDetailPanel" class="xl:col-span-4 pbi-card p-4 sm:p-5 flex flex-col justify-between space-y-4">
+        <!-- Renderizado dinámicamente por JS -->
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         6. TABLA COMPLETA DE CÁLCULO CPM Y CONTROL JIRA
+         ===================================================================== -->
+    <section aria-label="Tabla Completa CPM y Control Jira" class="pbi-card p-4 sm:p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-white">Matriz Completa de Cálculo CPM y Control de Estados Jira</h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Ajusta duraciones o actualiza el estado de Jira directamente en la tabla para recalcular el avance y la ruta crítica.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+          <span class="inline-flex items-center gap-1.5 text-[#10B981] font-medium">
+            <span class="w-2 h-2 rounded-full bg-[#10B981]"></span> Listo
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-[#F59E0B] font-medium">
+            <span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span> En curso
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-slate-400 font-medium">
+            <span class="w-2 h-2 rounded-full bg-[#64748B]"></span> Por hacer
+          </span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto border border-[#2A3142] rounded-xl">
+        <table class="w-full text-left border-collapse min-w-[1050px]">
+          <thead>
+            <tr class="bg-[#0D1017] border-b border-[#2A3142] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <th class="py-3 px-3.5">ID</th>
+              <th class="py-3 px-3.5">Actividad (Jira)</th>
+              <th class="py-3 px-3.5">Responsable</th>
+              <th class="py-3 px-3 text-center">Predecesoras</th>
+              <th class="py-3 px-3 text-center">Duración</th>
+              <th class="py-3 px-2.5 text-center" title="Early Start (Inicio Temprano)">ES</th>
+              <th class="py-3 px-2.5 text-center" title="Early Finish (Fin Temprano)">EF</th>
+              <th class="py-3 px-2.5 text-center" title="Late Start (Inicio Tardío)">LS</th>
+              <th class="py-3 px-2.5 text-center" title="Late Finish (Fin Tardío)">LF</th>
+              <th class="py-3 px-3 text-center" title="Holgura Total (LS - ES)">Holgura (H)</th>
+              <th class="py-3 px-3.5">Estado Jira</th>
+              <th class="py-3 px-3.5 text-right">Clasificación</th>
+            </tr>
+          </thead>
+          <tbody id="cpmTableBody" class="divide-y divide-[#2A3142]/70 text-xs sm:text-sm">
+            <!-- Filas generadas dinámicamente por JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="pt-1 pb-3 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-2">
+      <span>Proyecto Universitario CDMX · Metodología CRISP-DM &amp; Critical Path Method (CPM)</span>
+      <span>Fórmulas: ES = máx(EF pred) · EF = ES + Dur · LF = mín(LS suc) · LS = LF - Dur · Holgura = LS - ES</span>
+    </footer>
+  </div>
+
+  <!-- =========================================================================
+       MOTOR MATEMÁTICO CPM Y CONTROLADOR INTERACTIVO EN JAVASCRIPT
+       ========================================================================= -->
+  <script>
+    // 1. DATOS INICIALES EXACTOS (10 TAREAS DE JIRA)
+    const INITIAL_TASKS = [
+      {
+        id: "T1",
+        nombre: "Documentación inicial: Introducción, Objetivos y CRISP-DM",
+        responsable: "Persona 1 (Inicio y Datos)",
+        fase: "1. Comprensión del Negocio",
+        duracion: 2,
+        predecesoras: [],
+        estado: "Listo"
+      },
+      {
+        id: "T2",
+        nombre: "Carga, limpieza (IQR/nulos) y normalización de microdatos",
+        responsable: "Persona 1 (Inicio y Datos)",
+        fase: "2. Preparación de Datos",
+        duracion: 3,
+        predecesoras: ["T1"],
+        estado: "En curso"
+      },
+      {
+        id: "T3",
+        nombre: "Cálculo de estadística descriptiva de hábitos digitales",
+        responsable: "Persona 2 (Estadística)",
+        fase: "3. Análisis Exploratorio",
+        duracion: 2,
+        predecesoras: ["T2"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T4",
+        nombre: "Análisis de correlación matemática de Pearson (r y p-value)",
+        responsable: "Persona 2 (Estadística)",
+        fase: "3. Análisis Exploratorio",
+        duracion: 2,
+        predecesoras: ["T3"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T5",
+        nombre: "Segmentación de perfiles con K-Means y DBSCAN",
+        responsable: "Persona 3 (Perfiles)",
+        fase: "4. Modelado No Supervisado",
+        duracion: 3,
+        predecesoras: ["T2"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T6",
+        nombre: "Reducción de dimensionalidad con PCA (proyección 2D)",
+        responsable: "Persona 3 (Perfiles)",
+        fase: "4. Modelado No Supervisado",
+        duracion: 2,
+        predecesoras: ["T5"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T7",
+        nombre: "Modelado de Regresión Lineal Simple y Múltiple",
+        responsable: "Persona 4 (Predicción)",
+        fase: "5. Modelado Predictivo",
+        duracion: 3,
+        predecesoras: ["T2"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T8",
+        nombre: "Clasificación supervisada (Regresión Logística y Random Forest)",
+        responsable: "Persona 4 (Predicción)",
+        fase: "5. Modelado Predictivo",
+        duracion: 3,
+        predecesoras: ["T7"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T9",
+        nombre: "Creación de Dashboards interactivos (Power BI / Web) y gráficas",
+        responsable: "Persona 5 (Dashboards y Cierre)",
+        fase: "6. Evaluación y Visualización",
+        duracion: 3,
+        predecesoras: ["T4", "T6", "T8"],
+        estado: "Por hacer"
+      },
+      {
+        id: "T10",
+        nombre: "Redacción de conclusiones finales e integración del reporte",
+        responsable: "Persona 5 (Dashboards y Cierre)",
+        fase: "6. Evaluación y Visualización",
+        duracion: 2,
+        predecesoras: ["T9"],
+        estado: "Por hacer"
+      }
+    ];
+
+    // Estado mutable de la aplicación
+    let tasks = JSON.parse(JSON.stringify(INITIAL_TASKS));
+    let selectedTaskId = "T7"; // Nodo seleccionado por defecto para inspección
+    const filters = {
+      responsable: "ALL",
+      tipoRuta: "ALL",
+      estadoJira: "ALL"
+    };
+
+    // Coordenadas fijas para el diagrama de red PERT/CPM (3 ramas paralelas claras)
+    const PERT_LAYOUT = {
+      T1:  { x: 24,  y: 165, shortTitle: "Doc. Inicial y CRISP-DM" },
+      T2:  { x: 214, y: 165, shortTitle: "Limpieza IQR y Norm." },
+      // Rama Superior: Estadística (T3 -> T4)
+      T3:  { x: 422, y: 24,  shortTitle: "Estadística Descriptiva" },
+      T4:  { x: 630, y: 24,  shortTitle: "Correlación Pearson" },
+      // Rama Central: Clustering (T5 -> T6)
+      T5:  { x: 422, y: 165, shortTitle: "Clustering K-Means/DBSCAN" },
+      T6:  { x: 630, y: 165, shortTitle: "Reducción PCA (2D)" },
+      // Rama Inferior: Predictivo (T7 -> T8)
+      T7:  { x: 422, y: 306, shortTitle: "Regresión Lineal" },
+      T8:  { x: 630, y: 306, shortTitle: "Logística y Random Forest" },
+      // Convergencia Final (T9 -> T10)
+      T9:  { x: 838, y: 165, shortTitle: "Dashboards y Gráficas" },
+      T10: { x: 1004, y: 165, shortTitle: "Conclusiones y Reporte" }
+    };
+
+    const NODE_W = 148;
+    const NODE_H = 106;
+
+    // =========================================================================
+    // 2. MOTOR MATEMÁTICO CPM (FORWARD PASS & BACKWARD PASS EN TIEMPO REAL)
+    // =========================================================================
+    function calculateCPM(taskList) {
+      const map = {};
+      taskList.forEach(t => {
+        t.sucesoras = [];
+        t.ES = 0;
+        t.EF = 0;
+        t.LS = 0;
+        t.LF = 0;
+        t.holgura = 0;
+        t.esCritica = false;
+        map[t.id] = t;
+      });
+
+      // Construir lista de sucesoras
+      taskList.forEach(t => {
+        t.predecesoras.forEach(predId => {
+          if (map[predId]) {
+            map[predId].sucesoras.push(t.id);
+          }
+        });
+      });
+
+      // Ordenamiento topológico (Kahn) para garantizar evaluación segura en cualquier grafo DAG
+      const inDegree = {};
+      taskList.forEach(t => { inDegree[t.id] = t.predecesoras.length; });
+      const queue = taskList.filter(t => inDegree[t.id] === 0).map(t => t.id);
+      const topoOrder = [];
+
+      while (queue.length > 0) {
+        const currId = queue.shift();
+        topoOrder.push(currId);
+        map[currId].sucesoras.forEach(succId => {
+          inDegree[succId]--;
+          if (inDegree[succId] === 0) queue.push(succId);
+        });
+      }
+
+      // FORWARD PASS: ES = max(EF de predecesoras), EF = ES + duración
+      topoOrder.forEach(id => {
+        const t = map[id];
+        if (t.predecesoras.length === 0) {
+          t.ES = 0;
+        } else {
+          t.ES = Math.max(...t.predecesoras.map(pid => map[pid].EF));
+        }
+        t.EF = t.ES + t.duracion;
+      });
+
+      const totalDuration = Math.max(...taskList.map(t => t.EF), 0);
+
+      // BACKWARD PASS: LF = min(LS de sucesoras), LS = LF - duración, Holgura H = LS - ES
+      [...topoOrder].reverse().forEach(id => {
+        const t = map[id];
+        if (t.sucesoras.length === 0) {
+          t.LF = totalDuration;
+        } else {
+          t.LF = Math.min(...t.sucesoras.map(sid => map[sid].LS));
+        }
+        t.LS = t.LF - t.duracion;
+        t.holgura = t.LS - t.ES;
+        t.esCritica = (t.holgura === 0);
+      });
+
+      // Reconstruir secuencia(s) de Ruta Crítica mediante DFS sobre aristas críticas ajustadas
+      const criticalPaths = [];
+      const startNodes = taskList.filter(t => t.predecesoras.length === 0 && t.esCritica);
+
+      function dfsCritical(curr, path) {
+        const nextPath = [...path, curr.id];
+        if (curr.sucesoras.length === 0 && curr.EF === totalDuration) {
+          criticalPaths.push(nextPath);
+          return;
+        }
+        curr.sucesoras.forEach(succId => {
+          const succ = map[succId];
+          if (succ.esCritica && curr.EF === succ.ES) {
+            dfsCritical(succ, nextPath);
+          }
+        });
+      }
+
+      startNodes.forEach(sn => dfsCritical(sn, []));
+
+      return {
+        totalDuration,
+        criticalPaths,
+        taskMap: map
+      };
+    }
+
+    // =========================================================================
+    // 3. FILTRADO Y CONTROLES DE USUARIO
+    // =========================================================================
+    function getFilteredTasks() {
+      return tasks.filter(t => {
+        if (filters.responsable !== "ALL" && t.responsable !== filters.responsable) return false;
+        if (filters.tipoRuta === "CRITICAL" && !t.esCritica) return false;
+        if (filters.tipoRuta === "SLACK" && t.holgura <= 0) return false;
+        if (filters.estadoJira !== "ALL" && t.estado !== filters.estadoJira) return false;
+        return true;
+      });
+    }
+
+    function changeDuration(taskId, delta) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const nextVal = task.duracion + delta;
+      if (nextVal < 1 || nextVal > 15) return;
+      task.duracion = nextVal;
+      renderAll();
+    }
+
+    function changeJiraStatus(taskId, newStatus) {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      task.estado = newStatus;
+      renderAll();
+    }
+
+    function selectNode(taskId) {
+      selectedTaskId = taskId;
+      renderAll();
+    }
+
+    function resetOriginalData() {
+      tasks = JSON.parse(JSON.stringify(INITIAL_TASKS));
+      selectedTaskId = "T7";
+      clearSlicers(false);
+      renderAll();
+    }
+
+    function simulateScenario(type) {
+      tasks = JSON.parse(JSON.stringify(INITIAL_TASKS));
+      if (type === "clusteringDelay") {
+        // Aumenta T5 de 3 a 5 días -> Rama Clustering suma 7d (supera los 6d de T7->T8)
+        const t5 = tasks.find(t => t.id === "T5");
+        if (t5) t5.duracion = 5;
+        selectedTaskId = "T5";
+      } else if (type === "statsDelay") {
+        // Aumenta T4 de 2 a 5 días -> Rama Estadística suma 7d y se vuelve Ruta Crítica
+        const t4 = tasks.find(t => t.id === "T4");
+        if (t4) t4.duracion = 5;
+        selectedTaskId = "T4";
+      }
+      renderAll();
+    }
+
+    function clearSlicers(triggerRender = true) {
+      filters.responsable = "ALL";
+      filters.tipoRuta = "ALL";
+      filters.estadoJira = "ALL";
+      document.getElementById("filterResponsable").value = "ALL";
+      document.getElementById("filterTipoRuta").value = "ALL";
+      document.getElementById("filterEstadoJira").value = "ALL";
+      if (triggerRender) renderAll();
+    }
+
+    // =========================================================================
+    // 4. RENDERIZADO DE KPIS Y BANNER DE RUTA CRÍTICA
+    // =========================================================================
+    function renderKPIs(cpmResult, filteredTasks) {
+      const { totalDuration, criticalPaths } = cpmResult;
+
+      // KPI 1: Duración Total
+      document.getElementById("kpiTotalDuration").textContent = totalDuration;
+      const diff = totalDuration - 16;
+      const deltaBadge = document.getElementById("kpiDeltaBadge");
+      if (diff === 0) {
+        deltaBadge.textContent = "Base: 16d";
+        deltaBadge.className = "px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-800 text-slate-300 border border-[#2A3142]";
+        document.getElementById("kpiDurationSub").textContent = "Tiempo mínimo óptimo sin retrasos";
+      } else if (diff > 0) {
+        deltaBadge.textContent = `+${diff}d vs base`;
+        deltaBadge.className = "px-2 py-0.5 text-[10px] font-bold rounded-md bg-[#EF4444]/20 text-[#FF4D5A] border border-[#EF4444]/40";
+        document.getElementById("kpiDurationSub").textContent = `Impacto en entrega final: +${diff} día(s)`;
+      } else {
+        deltaBadge.textContent = `${diff}d vs base`;
+        deltaBadge.className = "px-2 py-0.5 text-[10px] font-bold rounded-md bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40";
+        document.getElementById("kpiDurationSub").textContent = `Ahorro de ${Math.abs(diff)} día(s) respecto al plan`;
+      }
+
+      // KPI 2: Tareas Críticas
+      const critTasks = tasks.filter(t => t.esCritica);
+      const critPct = ((critTasks.length / tasks.length) * 100).toFixed(1);
+      document.getElementById("kpiCriticalCount").textContent = `${critTasks.length} / ${tasks.length}`;
+      document.getElementById("kpiCriticalSub").textContent = `${critPct}% de actividades determinan la entrega`;
+
+      // KPI 3: Avance Global Jira (Listo=100%, En curso=50%, Por hacer=0%)
+      const statusWeight = { "Listo": 100, "En curso": 50, "Por hacer": 0 };
+      const sumProgress = tasks.reduce((acc, t) => acc + (statusWeight[t.estado] ?? 0), 0);
+      const globalPct = sumProgress / tasks.length;
+
+      const totalDays = tasks.reduce((acc, t) => acc + t.duracion, 0);
+      const weightedDays = tasks.reduce((acc, t) => acc + (t.duracion * ((statusWeight[t.estado] ?? 0) / 100)), 0);
+      const weightedPct = totalDays ? (weightedDays / totalDays) * 100 : 0;
+
+      document.getElementById("kpiProgressPct").textContent = `${globalPct.toFixed(1)}%`;
+      document.getElementById("kpiProgressWeighted").textContent = `(${weightedPct.toFixed(1)}% por días)`;
+      document.getElementById("kpiProgressBar").style.width = `${globalPct}%`;
+
+      // KPI 4: Holgura Máxima Disponible
+      const maxSlack = Math.max(...tasks.map(t => t.holgura), 0);
+      const tasksWithMaxSlack = tasks.filter(t => t.holgura === maxSlack && maxSlack > 0).map(t => t.id);
+      document.getElementById("kpiMaxSlack").textContent = maxSlack;
+      document.getElementById("kpiMaxSlackSub").textContent = maxSlack > 0
+        ? `Mayor margen en: ${tasksWithMaxSlack.join(", ")}`
+        : "Todas las rutas son críticas (0 holgura)";
+
+      // Banner de Secuencia Crítica
+      const seqContainer = document.getElementById("criticalPathSequenceContainer");
+      seqContainer.innerHTML = "";
+
+      if (criticalPaths.length === 0) {
+        seqContainer.innerHTML = `<span class="text-xs text-slate-400">No se detectó secuencia continua.</span>`;
+      } else {
+        criticalPaths.forEach((pathArr, pIdx) => {
+          if (pIdx > 0) {
+            const sep = document.createElement("span");
+            sep.className = "px-2 py-0.5 text-[11px] font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-md mx-1";
+            sep.textContent = "EMPATE CRÍTICO:";
+            seqContainer.appendChild(sep);
+          }
+          pathArr.forEach((tid, idx) => {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.onclick = () => selectNode(tid);
+            chip.className = `px-2.5 py-1 rounded-lg text-xs font-extrabold transition cursor-pointer ${
+              selectedTaskId === tid
+                ? "bg-[#FF4D5A] text-white ring-2 ring-white"
+                : "bg-[#EF4444]/20 hover:bg-[#EF4444]/35 text-[#FF4D5A] border border-[#EF4444]/50"
+            }`;
+            chip.textContent = tid;
+            seqContainer.appendChild(chip);
+
+            if (idx < pathArr.length - 1) {
+              const arrow = document.createElement("span");
+              arrow.className = "text-[#FF4D5A] font-bold text-xs";
+              arrow.textContent = "→";
+              seqContainer.appendChild(arrow);
+            }
+          });
+        });
+      }
+
+      // Actualizar texto resumen de filtros
+      const hasFilter = filters.responsable !== "ALL" || filters.tipoRuta !== "ALL" || filters.estadoJira !== "ALL";
+      document.getElementById("filterSummaryText").innerHTML =
+        `Mostrando <strong class="text-white">${filteredTasks.length}</strong> de ${tasks.length} tareas`;
+      document.getElementById("btnClearFilters").classList.toggle("hidden", !hasFilter);
+    }
+
+    // =========================================================================
+    // 5. RENDERIZADO DEL DIAGRAMA DE GANTT INTERACTIVO CON HOLGURA VISUAL
+    // =========================================================================
+    function renderGantt(cpmResult, filteredTasks) {
+      const container = document.getElementById("ganttContainer");
+      const totalDays = Math.max(cpmResult.totalDuration, 1);
+
+      if (filteredTasks.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center space-y-3">
+            <p class="text-sm text-slate-300">Ninguna tarea coincide con los filtros seleccionados.</p>
+            <button type="button" onclick="clearSlicers()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#EF4444] text-white hover:bg-[#FF4D5A] transition cursor-pointer">
+              Mostrar todas las tareas
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      // Generar encabezados de días (Día 1 .. Día N)
+      let dayHeadersHtml = "";
+      for (let d = 1; d <= totalDays; d++) {
+        dayHeadersHtml += `
+          <div class="flex-1 min-w-[34px] text-center py-2 text-[10px] font-semibold text-slate-400 border-l border-[#2A3142]/70">
+            D${d}
+          </div>
+        `;
+      }
+
+      // Generar filas de actividades
+      let rowsHtml = "";
+      filteredTasks.forEach(t => {
+        const leftPct = (t.ES / totalDays) * 100;
+        const execWidthPct = (t.duracion / totalDays) * 100;
+        const slackWidthPct = (t.holgura / totalDays) * 100;
+        const isSelected = selectedTaskId === t.id;
+
+        const statusDotColor =
+          t.estado === "Listo" ? "bg-[#10B981]" :
+          t.estado === "En curso" ? "bg-[#F59E0B]" : "bg-[#64748B]";
+
+        // Líneas verticales de guía por día dentro del track
+        let gridLinesHtml = "";
+        for (let d = 1; d <= totalDays; d++) {
+          gridLinesHtml += `<div class="flex-1 min-w-[34px] h-full border-l border-[#2A3142]/45"></div>`;
+        }
+
+        // Barra principal (Roja si es crítica, Turquesa si tiene holgura)
+        const mainBarClass = t.esCritica
+          ? "bg-gradient-to-r from-[#EF4444] to-[#FF4D5A] critical-glow text-white"
+          : "bg-gradient-to-r from-[#0284C7] to-[#38BDF8] text-slate-950 font-extrabold";
+
+        // Barra de holgura punteada/translúcida si H > 0
+        const slackBarHtml = t.holgura > 0
+          ? `
+            <div
+              style="left: ${leftPct + execWidthPct}%; width: ${slackWidthPct}%;"
+              class="absolute top-2 bottom-2 rounded-r-md slack-bar-pattern flex items-center justify-center px-1 overflow-hidden pointer-events-none"
+              title="Holgura disponible: ${t.holgura} día(s) (EF: Día ${t.EF} → LF: Día ${t.LF})"
+            >
+              <span class="text-[10px] font-bold text-[#38BDF8] whitespace-nowrap">+${t.holgura}d</span>
+            </div>
+          `
+          : "";
+
+        rowsHtml += `
+          <div class="flex items-stretch border-b border-[#2A3142]/60 last:border-b-0 transition ${isSelected ? "bg-[#1C2333]" : "hover:bg-[#151A24]/90"}">
+            <!-- Columna Izquierda: Info Tarea + Botones -1d/+1d -->
+            <div class="w-[290px] sm:w-[340px] shrink-0 p-2.5 sm:px-3.5 flex items-center justify-between gap-2 border-r border-[#2A3142]">
+              <button type="button" onclick="selectNode('${t.id}')" class="flex items-center gap-2.5 text-left min-w-0 flex-1 cursor-pointer group">
+                <span class="px-2 py-0.5 rounded-md text-xs font-extrabold shrink-0 ${
+                  t.esCritica
+                    ? "bg-[#EF4444]/20 text-[#FF4D5A] border border-[#EF4444]/40"
+                    : "bg-[#0EA5E9]/15 text-[#38BDF8] border border-[#0EA5E9]/35"
+                }">
+                  ${t.id}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full shrink-0 ${statusDotColor}" title="Estado Jira: ${t.estado}"></span>
+                    <span class="text-xs font-semibold text-slate-100 truncate group-hover:text-white" title="${t.nombre}">
+                      ${t.nombre}
+                    </span>
+                  </div>
+                  <span class="block text-[10.5px] text-slate-400 truncate mt-0.5">${t.responsable}</span>
+                </div>
+              </button>
+
+              <!-- Controles Rápidos de Duración (-1d / +1d) -->
+              <div class="flex items-center gap-1 shrink-0 bg-[#0D1017] px-1.5 py-1 rounded-lg border border-[#2A3142]">
+                <button type="button" onclick="changeDuration('${t.id}', -1)"
+                  class="w-5 h-5 rounded flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:bg-[#2A3142] transition cursor-pointer"
+                  title="Reducir 1 día">−</button>
+                <span class="text-[11px] font-bold text-white w-6 text-center">${t.duracion}d</span>
+                <button type="button" onclick="changeDuration('${t.id}', 1)"
+                  class="w-5 h-5 rounded flex items-center justify-center text-xs font-bold text-slate-300 hover:text-white hover:bg-[#2A3142] transition cursor-pointer"
+                  title="Aumentar 1 día (simular retraso)">+</button>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Línea de Tiempo (Track) -->
+            <div onclick="selectNode('${t.id}')" class="relative flex-1 min-w-[540px] flex items-stretch cursor-pointer">
+              ${gridLinesHtml}
+
+              <!-- Barra de Ejecución Temprana (ES a EF) -->
+              <div
+                style="left: ${leftPct}%; width: ${execWidthPct}%;"
+                class="absolute top-2 bottom-2 ${t.holgura > 0 ? "rounded-l-md" : "rounded-md"} ${mainBarClass} flex items-center justify-center px-1.5 overflow-hidden transition-all duration-300"
+                title="${t.id}: Inicio Temprano Día ${t.ES} → Fin Temprano Día ${t.EF} (${t.duracion}d)"
+              >
+                <span class="text-[10.5px] font-bold whitespace-nowrap">
+                  ${t.duracion}d (${t.ES}→${t.EF})
+                </span>
+              </div>
+
+              <!-- Extensión Punteada de Holgura (EF a LF) -->
+              ${slackBarHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = `
+        <div class="min-w-[880px]">
+          <!-- Cabecera Gantt -->
+          <div class="flex items-stretch bg-[#151A24] border-b border-[#2A3142]">
+            <div class="w-[290px] sm:w-[340px] shrink-0 px-3.5 py-2 flex items-center justify-between border-r border-[#2A3142] text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Actividad &amp; Responsable</span>
+              <span>Duración</span>
+            </div>
+            <div class="flex-1 min-w-[540px] flex items-stretch">
+              ${dayHeadersHtml}
+            </div>
+          </div>
+          <!-- Filas Gantt -->
+          <div>
+            ${rowsHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 6. RENDERIZADO DEL DIAGRAMA DE RED PERT/CPM EN SVG RESPONSIVO
+    // =========================================================================
+    function renderPERTNetwork(cpmResult, filteredTasks) {
+      const svg = document.getElementById("pertSvg");
+      const filteredIds = new Set(filteredTasks.map(t => t.id));
+      const { taskMap } = cpmResult;
+
+      // Definición de marcadores de flecha (Rojo Crítico, Turquesa Normal, Gris Atenuado)
+      let svgContent = `
+        <defs>
+          <marker id="arrowCritical" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#FF4D5A" />
+          </marker>
+          <marker id="arrowNormal" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#38BDF8" />
+          </marker>
+          <marker id="arrowDim" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#334155" />
+          </marker>
+          <filter id="glowRed" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+
+        <!-- Etiquetas de las 3 Ramas Paralelas -->
+        <text x="598" y="14" text-anchor="middle" fill="#64748B" font-size="10" font-weight="700" letter-spacing="0.06em">
+          RAMA ESTADÍSTICA (PERSONA 2)
+        </text>
+        <text x="598" y="155" text-anchor="middle" fill="#64748B" font-size="10" font-weight="700" letter-spacing="0.06em">
+          RAMA CLUSTERING (PERSONA 3)
+        </text>
+        <text x="598" y="296" text-anchor="middle" fill="#64748B" font-size="10" font-weight="700" letter-spacing="0.06em">
+          RAMA PREDICTIVA (PERSONA 4)
+        </text>
+      `;
+
+      // 1. Dibujar Flechas de Precedencia (Curvas Bézier suaves)
+      tasks.forEach(target => {
+        const dstPos = PERT_LAYOUT[target.id];
+        if (!dstPos) return;
+
+        target.predecesoras.forEach(srcId => {
+          const src = taskMap[srcId];
+          const srcPos = PERT_LAYOUT[srcId];
+          if (!src || !srcPos) return;
+
+          const x1 = srcPos.x + NODE_W;
+          const y1 = srcPos.y + NODE_H / 2;
+          const x2 = dstPos.x - 2;
+          const y2 = dstPos.y + NODE_H / 2;
+
+          const isCriticalEdge = src.esCritica && target.esCritica && (src.EF === target.ES);
+          const isVisible = filteredIds.has(src.id) || filteredIds.has(target.id);
+
+          const dx = Math.max((x2 - x1) * 0.45, 24);
+          const pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+          const strokeColor = !isVisible
+            ? "#2A3142"
+            : isCriticalEdge
+              ? "#FF4D5A"
+              : "#0EA5E9";
+          const strokeWidth = isCriticalEdge ? 2.6 : 1.7;
+          const strokeDash = isCriticalEdge ? "" : 'stroke-dasharray="4 3"';
+          const marker = !isVisible
+            ? "url(#arrowDim)"
+            : isCriticalEdge
+              ? "url(#arrowCritical)"
+              : "url(#arrowNormal)";
+
+          svgContent += `
+            <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${strokeDash} marker-end="${marker}" opacity="${isVisible ? 0.92 : 0.3}" />
+          `;
+        });
+      });
+
+      // 2. Dibujar Nodos (10 Tareas)
+      tasks.forEach(t => {
+        const pos = PERT_LAYOUT[t.id];
+        if (!pos) return;
+
+        const isVisible = filteredIds.has(t.id);
+        const isSelected = selectedTaskId === t.id;
+        const borderColor = isSelected
+          ? "#FACC15"
+          : t.esCritica
+            ? "#FF4D5A"
+            : "#38BDF8";
+        const headerFill = t.esCritica ? "rgba(239, 68, 68, 0.24)" : "rgba(14, 165, 233, 0.16)";
+        const footerFill = t.esCritica ? "rgba(239, 68, 68, 0.14)" : "rgba(15, 23, 42, 0.85)";
+        const statusColor =
+          t.estado === "Listo" ? "#10B981" :
+          t.estado === "En curso" ? "#F59E0B" : "#64748B";
+        const personaShort = t.responsable.split(" (")[0];
+
+        svgContent += `
+          <g class="pert-node" onclick="selectNode('${t.id}')" opacity="${isVisible ? 1 : 0.26}">
+            <!-- Sombra / Resplandor Crítico -->
+            ${t.esCritica && isVisible ? `<rect x="${pos.x}" y="${pos.y}" width="${NODE_W}" height="${NODE_H}" rx="11" fill="none" stroke="#EF4444" stroke-width="2" filter="url(#glowRed)" opacity="0.55" />` : ""}
+
+            <!-- Cuerpo Principal del Nodo -->
+            <rect x="${pos.x}" y="${pos.y}" width="${NODE_W}" height="${NODE_H}" rx="11" fill="#151A24" stroke="${borderColor}" stroke-width="${isSelected ? 2.5 : 1.6}" />
+
+            <!-- Banda Superior: ES | ID | EF -->
+            <rect x="${pos.x + 1}" y="${pos.y + 1}" width="${NODE_W - 2}" height="24" rx="10" fill="${headerFill}" />
+            <text x="${pos.x + 10}" y="${pos.y + 16}" fill="#CBD5E1" font-size="9.5" font-weight="600">ES:${t.ES}</text>
+            <text x="${pos.x + NODE_W / 2}" y="${pos.y + 16.5}" text-anchor="middle" fill="#FFFFFF" font-size="11" font-weight="800">${t.id}</text>
+            <text x="${pos.x + NODE_W - 10}" y="${pos.y + 16}" text-anchor="end" fill="#CBD5E1" font-size="9.5" font-weight="600">EF:${t.EF}</text>
+
+            <!-- Punto Estado Jira -->
+            <circle cx="${pos.x + NODE_W / 2 + 19}" cy="${pos.y + 13}" r="3.5" fill="${statusColor}" />
+
+            <!-- Centro: Título Corto, Responsable y Duración -->
+            <text x="${pos.x + NODE_W / 2}" y="${pos.y + 43}" text-anchor="middle" fill="#F8FAFC" font-size="10" font-weight="700">
+              ${pos.shortTitle}
+            </text>
+            <text x="${pos.x + NODE_W / 2}" y="${pos.y + 59}" text-anchor="middle" fill="#94A3B8" font-size="9.5" font-weight="500">
+              ${personaShort} · <tspan fill="#FFFFFF" font-weight="700">${t.duracion}d</tspan>
+            </text>
+
+            <!-- Línea divisoria inferior -->
+            <line x1="${pos.x + 1}" y1="${pos.y + 74}" x2="${pos.x + NODE_W - 1}" y2="${pos.y + 74}" stroke="#2A3142" stroke-width="1" />
+
+            <!-- Banda Inferior: LS | Holgura | LF -->
+            <rect x="${pos.x + 1}" y="${pos.y + 75}" width="${NODE_W - 2}" height="30" rx="10" fill="${footerFill}" />
+            <text x="${pos.x + 10}" y="${pos.y + 93}" fill="#94A3B8" font-size="9.5" font-weight="600">LS:${t.LS}</text>
+            <text x="${pos.x + NODE_W / 2}" y="${pos.y + 93.5}" text-anchor="middle" fill="${t.esCritica ? "#FF4D5A" : "#38BDF8"}" font-size="10" font-weight="800">
+              H:${t.holgura}d
+            </text>
+            <text x="${pos.x + NODE_W - 10}" y="${pos.y + 93}" text-anchor="end" fill="#94A3B8" font-size="9.5" font-weight="600">LF:${t.LF}</text>
+          </g>
+        `;
+      });
+
+      svg.innerHTML = svgContent;
+    }
+
+    // =========================================================================
+    // 7. PANEL DE DETALLE E IMPACTO DEL NODO SELECCIONADO
+    // =========================================================================
+    function renderNodeDetailPanel() {
+      const panel = document.getElementById("nodeDetailPanel");
+      const t = tasks.find(item => item.id === selectedTaskId) || tasks[0];
+      if (!t) return;
+
+      const predsHtml = t.predecesoras.length
+        ? t.predecesoras.map(pid =>
+            `<button type="button" onclick="selectNode('${pid}')" class="px-2 py-0.5 rounded bg-[#0D1017] hover:bg-[#2A3142] text-xs font-bold text-slate-200 border border-[#2A3142] transition cursor-pointer">${pid}</button>`
+          ).join(" ")
+        : `<span class="text-xs text-slate-500">Ninguna (Inicio del proyecto)</span>`;
+
+      const succsHtml = t.sucesoras.length
+        ? t.sucesoras.map(sid =>
+            `<button type="button" onclick="selectNode('${sid}')" class="px-2 py-0.5 rounded bg-[#0D1017] hover:bg-[#2A3142] text-xs font-bold text-slate-200 border border-[#2A3142] transition cursor-pointer">${sid}</button>`
+          ).join(" ")
+        : `<span class="text-xs text-slate-500">Ninguna (Entregable final)</span>`;
+
+      const impactMessage = t.esCritica
+        ? `<strong>Actividad Crítica (H = 0 días):</strong> No tiene margen de retraso. Cualquier demora en <strong>${t.id}</strong> retrasará día por día la entrega final del proyecto.`
+        : `<strong>Actividad con Holgura (H = ${t.holgura} día${t.holgura > 1 ? "s" : ""}):</strong> Puede retrasarse hasta <strong>${t.holgura} día(s)</strong> (iniciando máximo el Día ${t.LS} y terminando el Día ${t.LF}) sin afectar la fecha final.`;
+
+      panel.innerHTML = `
+        <div class="space-y-3">
+          <div class="flex items-center justify-between gap-2">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-extrabold ${
+              t.esCritica
+                ? "bg-[#EF4444]/20 text-[#FF4D5A] border border-[#EF4444]/40"
+                : "bg-[#0EA5E9]/15 text-[#38BDF8] border border-[#0EA5E9]/40"
+            }">
+              NODO ${t.id} · ${t.esCritica ? "RUTA CRÍTICA" : "CON HOLGURA"}
+            </span>
+            <span class="text-[11px] font-medium text-slate-400">${t.fase}</span>
+          </div>
+
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-white leading-snug">${t.nombre}</h3>
+            <p class="text-xs text-slate-400 mt-1">Responsable: <strong class="text-slate-200">${t.responsable}</strong></p>
+          </div>
+
+          <!-- Matriz 2x2 de Tiempos CPM -->
+          <div class="grid grid-cols-2 gap-2.5 pt-1">
+            <div class="p-2.5 rounded-xl bg-[#0D1017] border border-[#2A3142]">
+              <span class="block text-[10px] uppercase tracking-wider text-slate-400">Inicio / Fin Temprano</span>
+              <span class="text-sm font-extrabold text-white mt-0.5 block">ES: Día ${t.ES} → EF: Día ${t.EF}</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-[#0D1017] border border-[#2A3142]">
+              <span class="block text-[10px] uppercase tracking-wider text-slate-400">Inicio / Fin Tardío</span>
+              <span class="text-sm font-extrabold text-white mt-0.5 block">LS: Día ${t.LS} → LF: Día ${t.LF}</span>
+            </div>
+          </div>
+
+          <!-- Controles Interactivos del Nodo -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="p-2.5 rounded-xl bg-[#0D1017] border border-[#2A3142] flex items-center justify-between">
+              <span class="text-xs text-slate-400">Duración:</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="changeDuration('${t.id}', -1)" class="w-6 h-6 rounded bg-[#151A24] hover:bg-[#2A3142] text-white font-bold text-xs cursor-pointer">−</button>
+                <span class="text-xs font-extrabold text-white w-6 text-center">${t.duracion}d</span>
+                <button type="button" onclick="changeDuration('${t.id}', 1)" class="w-6 h-6 rounded bg-[#151A24] hover:bg-[#2A3142] text-white font-bold text-xs cursor-pointer">+</button>
+              </div>
+            </div>
+
+            <div class="p-2 rounded-xl bg-[#0D1017] border border-[#2A3142] flex items-center justify-between gap-1.5">
+              <span class="text-xs text-slate-400 pl-1">Jira:</span>
+              <select onchange="changeJiraStatus('${t.id}', this.value)" class="pbi-select text-xs font-semibold py-1 px-2 cursor-pointer">
+                <option value="Listo" ${t.estado === "Listo" ? "selected" : ""}>Listo</option>
+                <option value="En curso" ${t.estado === "En curso" ? "selected" : ""}>En curso</option>
+                <option value="Por hacer" ${t.estado === "Por hacer" ? "selected" : ""}>Por hacer</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Precedencias -->
+          <div class="space-y-1.5 text-xs pt-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">Predecesoras:</span>
+              <div class="flex flex-wrap gap-1">${predsHtml}</div>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-400">Sucesoras:</span>
+              <div class="flex flex-wrap gap-1">${succsHtml}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Caja de Análisis de Impacto -->
+        <div class="p-3 rounded-xl text-xs leading-relaxed ${
+          t.esCritica
+            ? "bg-[#EF4444]/10 border border-[#EF4444]/35 text-rose-200"
+            : "bg-[#0EA5E9]/10 border border-[#0EA5E9]/35 text-sky-200"
+        }">
+          ${impactMessage}
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 8. RENDERIZADO DE LA TABLA COMPLETA DE CÁLCULO CPM Y CONTROL JIRA
+    // =========================================================================
+    function renderTable(filteredTasks) {
+      const tbody = document.getElementById("cpmTableBody");
+
+      if (filteredTasks.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" class="py-8 text-center text-xs text-slate-400">
+              No hay registros que mostrar con los filtros actuales.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredTasks.map(t => {
+        const isSelected = selectedTaskId === t.id;
+        const predsText = t.predecesoras.length ? t.predecesoras.join(", ") : "—";
+
+        const statusSelectStyle =
+          t.estado === "Listo"
+            ? "border-[#10B981]/50 text-[#10B981] bg-[#10B981]/10"
+            : t.estado === "En curso"
+              ? "border-[#F59E0B]/50 text-[#F59E0B] bg-[#F59E0B]/10"
+              : "border-[#64748B]/50 text-slate-300 bg-[#64748B]/10";
+
+        const classificationBadge = t.esCritica
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-[#EF4444]/20 text-[#FF4D5A] border border-[#EF4444]/45">
+               <span class="w-1.5 h-1.5 rounded-full bg-[#FF4D5A]"></span> RUTA CRÍTICA
+             </span>`
+          : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#0EA5E9]/15 text-[#38BDF8] border border-[#0EA5E9]/40">
+               <span class="w-1.5 h-1.5 rounded-full bg-[#38BDF8]"></span> CON HOLGURA
+             </span>`;
+
+        return `
+          <tr onclick="selectNode('${t.id}')" class="transition cursor-pointer ${isSelected ? "bg-[#1C2333]" : "hover:bg-[#1A202E]/70"}">
+            <td class="py-3 px-3.5 font-extrabold ${t.esCritica ? "text-[#FF4D5A]" : "text-[#38BDF8]"}">${t.id}</td>
+            <td class="py-3 px-3.5">
+              <div class="font-semibold text-slate-100">${t.nombre}</div>
+              <div class="text-[11px] text-slate-400">${t.fase}</div>
+            </td>
+            <td class="py-3 px-3.5 text-xs text-slate-300 whitespace-nowrap">${t.responsable}</td>
+            <td class="py-3 px-3 text-center font-mono text-xs text-slate-300">${predsText}</td>
+            <td class="py-3 px-3 text-center" onclick="event.stopPropagation()">
+              <div class="inline-flex items-center gap-1 bg-[#0D1017] px-1.5 py-1 rounded-lg border border-[#2A3142]">
+                <button type="button" onclick="changeDuration('${t.id}', -1)" class="w-5 h-5 rounded hover:bg-[#2A3142] text-slate-300 font-bold text-xs cursor-pointer">−</button>
+                <span class="font-bold text-white text-xs w-6 text-center">${t.duracion}d</span>
+                <button type="button" onclick="changeDuration('${t.id}', 1)" class="w-5 h-5 rounded hover:bg-[#2A3142] text-slate-300 font-bold text-xs cursor-pointer">+</button>
+              </div>
+            </td>
+            <td class="py-3 px-2.5 text-center font-mono text-xs text-slate-300">${t.ES}</td>
+            <td class="py-3 px-2.5 text-center font-mono text-xs text-slate-300">${t.EF}</td>
+            <td class="py-3 px-2.5 text-center font-mono text-xs text-slate-300">${t.LS}</td>
+            <td class="py-3 px-2.5 text-center font-mono text-xs text-slate-300">${t.LF}</td>
+            <td class="py-3 px-3 text-center font-extrabold text-xs ${t.esCritica ? "text-[#FF4D5A]" : "text-[#38BDF8]"}">
+              ${t.holgura}d
+            </td>
+            <td class="py-3 px-3.5" onclick="event.stopPropagation()">
+              <select onchange="changeJiraStatus('${t.id}', this.value)"
+                class="pbi-select text-xs font-bold py-1.5 px-2.5 cursor-pointer ${statusSelectStyle}">
+                <option value="Listo" ${t.estado === "Listo" ? "selected" : ""}>Listo</option>
+                <option value="En curso" ${t.estado === "En curso" ? "selected" : ""}>En curso</option>
+                <option value="Por hacer" ${t.estado === "Por hacer" ? "selected" : ""}>Por hacer</option>
+              </select>
+            </td>
+            <td class="py-3 px-3.5 text-right whitespace-nowrap">${classificationBadge}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // 9. CICLO DE ACTUALIZACIÓN GLOBAL E INICIALIZACIÓN
+    // =========================================================================
+    function renderAll() {
+      const cpmResult = calculateCPM(tasks);
+      const filteredTasks = getFilteredTasks();
+
+      renderKPIs(cpmResult, filteredTasks);
+      renderGantt(cpmResult, filteredTasks);
+      renderPERTNetwork(cpmResult, filteredTasks);
+      renderNodeDetailPanel();
+      renderTable(filteredTasks);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("filterResponsable").addEventListener("change", (e) => {
+        filters.responsable = e.target.value;
+        renderAll();
+      });
+      document.getElementById("filterTipoRuta").addEventListener("change", (e) => {
+        filters.tipoRuta = e.target.value;
+        renderAll();
+      });
+      document.getElementById("filterEstadoJira").addEventListener("change", (e) => {
+        filters.estadoJira = e.target.value;
+        renderAll();
+      });
+
+      renderAll();
+    });
+  </script>
+</body>
+</html>
